@@ -4,6 +4,8 @@ import random
 import yt_dlp
 from discord import FFmpegPCMAudio
 import asyncio
+import matplotlib.pyplot as plt
+import io
 
 # Set up the bot with the required intents and command prefix
 intents = discord.Intents.all()
@@ -18,11 +20,51 @@ async def on_ready():
     print(f'Bot {bot.user} is now online and ready!')
 
 # Slash command: /roulette
-@bot.tree.command(name="roulette", description="Choose one of the provided options")
+@bot.tree.command(name="roulette", description="Choose one of the provided options with count support and display a pie chart")
 async def roulette(interaction: discord.Interaction, options: str):
-    options_list = options.split(',')
-    choice = random.choice(options_list).strip()
-    await interaction.response.send_message(f'I choose: {choice}')
+    expanded_options = []
+    counts = {}
+
+    # Parse options and expand based on count
+    for item in options.split(','):
+        item = item.strip()
+        if '|' in item:
+            name, count_str = item.split('|', 1)
+            count = int(count_str) if count_str.isdigit() else 1
+        else:
+            name, count = item, 1
+        expanded_options.extend([name.strip()] * count)
+
+        # Count occurrences of each item for the chart
+        counts[name.strip()] = counts.get(name.strip(), 0) + count
+
+    # Select a random choice and calculate its percentage
+    choice = random.choice(expanded_options)
+    choice_count = expanded_options.count(choice)
+    total_count = len(expanded_options)
+    win_percentage = (choice_count / total_count) * 100
+
+    # Generate a pie chart
+    labels = list(counts.keys())
+    sizes = list(counts.values())
+    colors = ['#ff9999','#66b3ff','#99ff99','#ffcc99']  # Add more colors as needed
+
+    plt.figure(figsize=(6,6))
+    plt.pie(sizes, labels=labels, autopct='%1.1f%%', startangle=140, colors=colors)
+    plt.title(f'Rolling for {interaction.user.name}')
+    plt.gca().axis("equal")  # Equal aspect ratio ensures that pie is drawn as a circle.
+
+    # Save chart to a BytesIO object
+    image_bytes = io.BytesIO()
+    plt.savefig(image_bytes, format='png')
+    image_bytes.seek(0)
+
+    # Send the result message along with the pie chart image
+    await interaction.response.send_message(
+        f'Congratulations! The chosen option is: **{choice}**\n'
+        f'with a chance of **{win_percentage:.2f}%**',
+        file=discord.File(fp=image_bytes, filename="roulette_result.png")
+    )
 
 # Slash command to leave the voice channel
 @bot.tree.command(name="leave", description="Disconnect from the voice channel")
@@ -95,4 +137,3 @@ async def play(interaction: discord.Interaction, url: str):
     except Exception as e:
         # If something goes wrong, send a follow-up message
         await interaction.followup.send(f"An error occurred: {e}")
-
