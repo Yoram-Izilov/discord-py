@@ -7,6 +7,7 @@ COPY . .
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
+    apt install ffmpeg -y \
     libsndfile1 \
     curl \
     && rm -rf /var/lib/apt/lists/*

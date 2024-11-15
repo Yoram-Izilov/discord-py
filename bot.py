@@ -96,6 +96,7 @@ async def play(interaction: discord.Interaction, url: str):
     # yt-dlp options to ensure the best audio stream is extracted
     ydl_opts = {
         'format': 'bestaudio/best',
+        'extractaudio': True, 
         'quiet': True,
         'noplaylist': True,
     }
@@ -119,5 +120,6 @@ async def play(interaction: discord.Interaction, url: str):
 
             voice_client.play(source, after=after_play)
             await interaction.followup.send(f"Now playing: {info['title']}")
+
     except Exception as e:
         await interaction.followup.send(f"An error occurred: {e}")
