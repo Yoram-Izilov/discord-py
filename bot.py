@@ -112,14 +112,25 @@ async def play(interaction: discord.Interaction, url: str):
                 options="-vn"
             )
 
-            def after_play(error):
-                if error:
-                    print(f"Error: {error}")
-                if voice_client.is_connected():
-                    asyncio.run_coroutine_threadsafe(voice_client.disconnect(), bot.loop)
+                   # Create an asyncio Event to wait for playback to finish
+        playback_finished = asyncio.Event()
 
-            voice_client.play(source, after=after_play)
-            await interaction.followup.send(f"Now playing: {info['title']}")
+        # After playback callback
+        def after_play(error):
+            if error:
+                print(f"Playback error: {error}")
+            playback_finished.set()  # Signal that playback is done
 
+        # Play audio
+        voice_client.play(source, after=after_play)
+        await interaction.followup.send(f"Now playing: {info['title']}")
+
+        # Wait until playback finishes
+        await playback_finished.wait()
+
+        # Disconnect after playback
+        if voice_client.is_connected():
+            await voice_client.disconnect()
+            
     except Exception as e:
         await interaction.followup.send(f"An error occurred: {e}")
