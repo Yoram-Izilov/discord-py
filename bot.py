@@ -96,45 +96,29 @@ async def play(interaction: discord.Interaction, url: str):
 
     # yt-dlp options to ensure the best audio stream is extracted
     ydl_opts = {
-        'format': 'bestaudio/best',   # Get the best audio quality
-        'extractaudio': True,         # Only extract audio
-        'audioquality': 1,            # Best quality
-        'outtmpl': 'downloads/%(id)s.%(ext)s',  # Download location (unused here, but keep it for context)
-        'restrictfilenames': True,
-        'noplaylist': True,           # Avoid downloading entire playlists
-        'quiet': True,                # Less verbose output
-        'force_generic_extractor': True,  # Ensure that yt-dlp uses a generic extractor
+        'format': 'bestaudio/best',
+        'quiet': True,
+        'noplaylist': True,
     }
 
     try:
-        # Extract the video info using yt-dlp
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(url, download=False)
-            if 'formats' in info:
-                # We will now grab the URL for the best audio format
-                audio_url = None
-                for f in info['formats']:
-                    if f.get('acodec') == 'mp4a.40.2':  # We want AAC audio codec
-                        audio_url = f['url']
-                        break
+            audio_url = info['formats'][0]['url']
 
-                if not audio_url:
-                    # If no valid audio URL found, fallback to the first available
-                    audio_url = info['formats'][0]['url']
+            source = FFmpegPCMAudio(
+                audio_url,
+                before_options="-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5",
+                options="-vn"
+            )
 
-                # Set FFmpegPCMAudio with more reconnect options for streaming stability
-                source = FFmpegPCMAudio(
-                    audio_url,
-                    before_options="-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5",
-                    options="-vn"
-                )
-                # Play the audio in the voice channel
-                voice_client.play(source, after=lambda e: print(f'Finished playing: {e}'))
+            def after_play(error):
+                if error:
+                    print(f"Error: {error}")
+                if voice_client.is_connected():
+                    asyncio.run_coroutine_threadsafe(voice_client.disconnect(), bot.loop)
 
-                # Send a follow-up message indicating the song is now playing
-                await interaction.followup.send(f"Now playing: {info['title']}")
-            else:
-                await interaction.followup.send("Could not extract audio from the given URL.")
+            voice_client.play(source, after=after_play)
+            await interaction.followup.send(f"Now playing: {info['title']}")
     except Exception as e:
-        # If something goes wrong, send a follow-up message
         await interaction.followup.send(f"An error occurred: {e}")
