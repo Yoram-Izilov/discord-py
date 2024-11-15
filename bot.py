@@ -124,8 +124,8 @@ async def play(interaction: discord.Interaction, url: str):
                     options="-vn"
                 )
                 # Play the audio in the voice channel
-                voice_client.play(source, after=lambda e: print(f'Finished playing: {e}'))
-
+                voice_client.play(source, after=lambda e: asyncio.create_task(leave(interaction)))
+                
                 # Send a follow-up message indicating the song is now playing
                 await interaction.followup.send(f"Now playing: {info['title']}")
             else:
