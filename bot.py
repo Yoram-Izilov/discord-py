@@ -102,19 +102,34 @@ async def play(interaction: discord.Interaction, url: str):
     }
 
     try:
+        # Extract the video info using yt-dlp
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(url, download=False)
-            audio_url = info['formats'][0]['url']
+            if 'formats' in info:
+                # We will now grab the URL for the best audio format
+                audio_url = None
+                for f in info['formats']:
+                    if f.get('acodec') == 'mp4a.40.2':  # We want AAC audio codec
+                        audio_url = f['url']
+                        break
 
-            source = FFmpegPCMAudio(
-                audio_url,
-                before_options="-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5",
-                options="-vn"
-            )
+                if not audio_url:
+                    # If no valid audio URL found, fallback to the first available
+                    audio_url = info['formats'][0]['url']
 
-        # Play audio
-        voice_client.play(source, after=lambda e: asyncio.create_task(leave(interaction)))
+                # Set FFmpegPCMAudio with more reconnect options for streaming stability
+                source = FFmpegPCMAudio(
+                    audio_url,
+                    before_options="-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5",
+                    options="-vn"
+                )
+                # Play the audio in the voice channel
+                voice_client.play(source, after=lambda e: print(f'Finished playing: {e}'))
 
-        await interaction.followup.send(f"Now playing: {info['title']}")
+                # Send a follow-up message indicating the song is now playing
+                await interaction.followup.send(f"Now playing: {info['title']}")
+            else:
+                await interaction.followup.send("Could not extract audio from the given URL.")
+
     except Exception as e:
         await interaction.followup.send(f"An error occurred: {e}")
