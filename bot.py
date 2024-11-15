@@ -7,7 +7,7 @@ import asyncio
 import matplotlib.pyplot as plt
 import io
 
-# testing webhook
+# testing webhook2
 # Set up the bot with the required intents and command prefix
 intents = discord.Intents.all()
 intents.message_content = True  # Required for reading messages
