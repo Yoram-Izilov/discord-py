@@ -67,7 +67,7 @@ async def chart_and_annouce(interaction, expanded_options, counts):
             # For the selected label: bold, white text with matching background
             plt.text(label, -0.03, wrapped_label, 
                     ha='center', va='top',
-                    weight='bold', color='white',
+                    weight='bold', color='black',
                     bbox=dict(facecolor=bar_color, 
                             edgecolor='gold', 
                             pad=2,
@@ -75,7 +75,9 @@ async def chart_and_annouce(interaction, expanded_options, counts):
         else:
             # For other labels: normal appearance
             plt.text(label, -0.03, wrapped_label, 
-                    ha='center', va='top', weight='bold', color='white')
+                    ha='center', va='top',
+                    weight='bold', color='black',
+                    bbox=dict(facecolor=bar_color))
 
     # Remove original x-axis labels to avoid overlap
     plt.gca().set_xticklabels([])
@@ -87,7 +89,8 @@ async def chart_and_annouce(interaction, expanded_options, counts):
     # Set the y-axis to percentage
     plt.ylim(0, max(counts.values()) * 1.02)  # Add a little margin on top
     plt.yticks(ticks=[i for i in range(0, max(counts.values()) + 1, 1)],
-            labels=[f"{i / total_count * 100:.0f}%" for i in range(0, max(counts.values()) + 1, 1)])
+            labels=[f"{i / total_count * 100:.0f}%" for i in range(0, max(counts.values()) + 1, 1)],
+            color='white')
 
     # Save chart to a BytesIO object
     image_bytes = io.BytesIO()
@@ -100,7 +103,6 @@ async def chart_and_annouce(interaction, expanded_options, counts):
         description=f'Congratulations! The chosen option is: **{choice}**\n'
                     f'with a chance of **{win_percentage:.2f}%**',
         color=discord.Color.green()  # Optional, you can change the color as you like
-        
     )
 
     # Add the image to the embed (image_bytes should be the byte data of the image)
@@ -110,13 +112,6 @@ async def chart_and_annouce(interaction, expanded_options, counts):
         embed=embed,  # The embed you created
         file=discord.File(fp=image_bytes, filename="roulette_result.png")  # Attach the image
     )
-
-    # Send the result message along with the pie chart image
-    # await interaction.response.send_message(
-    #     f'Congratulations! The chosen option is: **{choice}**\n'
-    #     f'with a chance of **{win_percentage:.2f}%**',
-    #     file=discord.File(fp=image_bytes, filename="roulette_result.png")
-    # )
 
 # Slash command: /roulette
 @bot.tree.command(name="roulette", description="Choose one of the provided options with count support and display a pie chart")
