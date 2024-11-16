@@ -38,7 +38,7 @@ async def chart_and_annouce(interaction, expanded_options, counts):
     # Create the bar chart
     chart_width = 2 * len(labels)
     if (chart_width == 2): chart_width = chart_width + 1
-    plt.figure(figsize=(chart_width, 6), facecolor='transparent')
+    plt.figure(figsize=(chart_width, 6), facecolor=(0, 0, 0, 0))
     
     # Dynamically adjust bottom margin based on maximum text height
     max_chars_per_line = int(20)
