@@ -1,6 +1,7 @@
 import discord
 from discord.ext import commands
 from discord import app_commands
+from discord import Embed
 import random
 import yt_dlp
 from discord import FFmpegPCMAudio
@@ -93,12 +94,26 @@ async def chart_and_annouce(interaction, expanded_options, counts):
     plt.savefig(image_bytes, format='png')
     image_bytes.seek(0)
 
-    # Send the result message along with the pie chart image
-    await interaction.response.send_message(
-        f'Congratulations! The chosen option is: **{choice}**\n'
-        f'with a chance of **{win_percentage:.2f}%**',
-        file=discord.File(fp=image_bytes, filename="roulette_result.png")
+    # Create the embed object
+    embed = Embed(
+        title="Roulette Result",  # Title of the embed
+        description=f'Congratulations! The chosen option is: **{choice}**\n'
+                    f'with a chance of **{win_percentage:.2f}%**',
+        color=discord.Color.green()  # Optional, you can change the color as you like
     )
+
+    # Send the embed message along with the pie chart image
+    await interaction.response.send_message(
+        embed=embed,  # The embed you created
+        file=discord.File(fp=image_bytes, filename="roulette_result.png")  # Attach the image
+    )
+
+    # Send the result message along with the pie chart image
+    # await interaction.response.send_message(
+    #     f'Congratulations! The chosen option is: **{choice}**\n'
+    #     f'with a chance of **{win_percentage:.2f}%**',
+    #     file=discord.File(fp=image_bytes, filename="roulette_result.png")
+    # )
 
 # Slash command: /roulette
 @bot.tree.command(name="roulette", description="Choose one of the provided options with count support and display a pie chart")
