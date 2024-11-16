@@ -76,7 +76,7 @@ async def chart_and_annouce(interaction, expanded_options, counts):
             # For other labels: normal appearance
             plt.text(label, -0.03, wrapped_label, 
                     ha='center', va='top',
-                    weight='bold', color='black',
+                    weight='bold', color='white',
                     bbox=dict(facecolor=bar_color))
 
     # Remove original x-axis labels to avoid overlap
