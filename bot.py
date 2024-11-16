@@ -38,7 +38,7 @@ async def chart_and_annouce(interaction, expanded_options, counts):
     # Create the bar chart
     chart_width = 2 * len(labels)
     if (chart_width == 2): chart_width = chart_width + 1
-    plt.figure(figsize=(chart_width, 6), facecolor='gray')
+    plt.figure(figsize=(chart_width, 6), facecolor='black')
     
     # Dynamically adjust bottom margin based on maximum text height
     max_chars_per_line = int(20)
@@ -66,7 +66,7 @@ async def chart_and_annouce(interaction, expanded_options, counts):
             # For the selected label: bold, white text with matching background
             plt.text(label, -0.03, wrapped_label, 
                     ha='center', va='top',
-                    weight='bold', color='black',
+                    weight='bold', color='white',
                     bbox=dict(facecolor=bar_color, 
                             edgecolor='gold', 
                             pad=2,
@@ -74,7 +74,7 @@ async def chart_and_annouce(interaction, expanded_options, counts):
         else:
             # For other labels: normal appearance
             plt.text(label, -0.03, wrapped_label, 
-                    ha='center', va='top', weight='bold')
+                    ha='center', va='top', weight='bold', color='white')
 
     # Remove original x-axis labels to avoid overlap
     plt.gca().set_xticklabels([])
