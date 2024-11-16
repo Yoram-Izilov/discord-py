@@ -100,8 +100,11 @@ async def chart_and_annouce(interaction, expanded_options, counts):
         description=f'Congratulations! The chosen option is: **{choice}**\n'
                     f'with a chance of **{win_percentage:.2f}%**',
         color=discord.Color.green()  # Optional, you can change the color as you like
+        
     )
 
+    # Add the image to the embed (image_bytes should be the byte data of the image)
+    embed.set_image(url="attachment://roulette_result.png")
     # Send the embed message along with the pie chart image
     await interaction.response.send_message(
         embed=embed,  # The embed you created
