@@ -85,6 +85,8 @@ async def chart_and_annouce(interaction, expanded_options, counts):
     # Remove the border (spines) around the plot
     plt.gca().spines['top'].set_visible(False)
     plt.gca().spines['right'].set_visible(False)
+    plt.gca().spines['left'].set_color('white')
+    plt.gca().spines['bottom'].set_color('white')
     plt.gca().patch.set_alpha(0.0)
     # Set the y-axis to percentage
     plt.ylim(0, max(counts.values()) * 1.02)  # Add a little margin on top
