@@ -67,7 +67,7 @@ async def chart_and_annouce(interaction, expanded_options, counts):
             # For the selected label: bold, white text with matching background
             plt.text(label, -0.03, wrapped_label, 
                     ha='center', va='top',
-                    weight='bold', color='black',
+                    weight='bold', color='white',
                     bbox=dict(facecolor=bar_color, 
                             edgecolor='gold', 
                             pad=2,
