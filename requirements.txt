@@ -4,3 +4,7 @@ ffmpeg-python
 PyNaCl
 asyncio
 matplotlib
+feedparser
+requests
+beautifulsoup4
+aiohttp
