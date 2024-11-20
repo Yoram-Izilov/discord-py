@@ -396,19 +396,32 @@ def sanitize_option(title):
     return title
 
 # Helper function to create select menus with sanitized titles and GUIDs as values
-def create_select_menus(all_series_and_guid):
+def create_select_menus(all_series_and_guid, current_rss_feed=None):
     # Create sanitized series from the tuples (series, guid)
+    if current_rss_feed is None:
+        current_rss_feed = []
+
     sanitized_series_and_guid = [(sanitize_option(series), guid) for series, guid in all_series_and_guid]
+
+    # Filter out series and guid that already exist in current_rss_feed
+    sanitized_series_and_guid_filtered = []
+
+    for series, guid in sanitized_series_and_guid:
+        if series not in current_rss_feed:
+            obj = (series, guid)
+            sanitized_series_and_guid_filtered.append(obj)
+
     menus = []
     max_options = 25  # Discord's limit per select menu
     # Loop over the series and guid tuples in chunks of max_options to create paginated select menus
-    for i in range(0, len(sanitized_series_and_guid), max_options):
+    for i in range(0, len(sanitized_series_and_guid_filtered), max_options):
+
         options = [
             discord.SelectOption(
                 label=series,  # Display the sanitized series name
                 value= f"{series}|RSS|{guid}"  # Use the corresponding GUID as the value
             )
-            for series, guid in sanitized_series_and_guid[i:i + max_options]
+            for series, guid in sanitized_series_and_guid_filtered[i:i + max_options]
         ]
         select_menu = discord.ui.Select(placeholder="Choose an series to add", options=options)
         menus.append(select_menu)
@@ -419,9 +432,14 @@ def create_select_menus(all_series_and_guid):
 async def add_rss(interaction: discord.Interaction):
     rss = fetch_rss_feed()  # Fetch RSS feed
     all_series_and_guid = [(entry["series"], entry["guid"]) for entry in rss] # Extract series and guid as tuples
+    saved_rss = read_saved_rss()
+    saved_rss_filtered = []
+
+    for rss_obj in saved_rss:
+        saved_rss_filtered.append(rss_obj.split('|RSS|')[0])
 
     # Create select menus with sanitized titles and pagination if needed
-    select_menus = create_select_menus(all_series_and_guid )
+    select_menus = create_select_menus(all_series_and_guid, saved_rss_filtered)
     async def select_callback(interaction: discord.Interaction):
         value = interaction.data['values'][0]  # Ensure we access 'values' as a dictionary key
         series, guid = value.split("|RSS|") 
