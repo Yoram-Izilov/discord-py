@@ -24,6 +24,24 @@ intents.message_content = True  # Required for reading messages
 intents.guilds = True  # Required to join voice channels
 bot = commands.Bot(command_prefix='/', intents=intents)
 
+
+def load_config():
+    local_config = 'config-local.json'
+    default_config = 'config.json'
+    if os.path.exists(local_config):
+        config_file = local_config
+        print(f"Using local configuration: {local_config}")
+    elif os.path.exists(default_config):
+        config_file = default_config
+        print(f"Using default configuration: {default_config}")
+    else:
+        raise FileNotFoundError("Neither config-local.json nor config.json was found.")
+
+    with open(config_file, 'r') as file:
+        return json.load(file)
+
+config = load_config()
+
 @bot.event
 async def on_ready():
     await bot.tree.sync()  # Syncs the slash commands with Discord
@@ -564,7 +582,8 @@ async def search(interaction: discord.Interaction, query: str):
             )
     
     await interaction.followup.send(embed=embed)
-    
+print(config['discord']['token'])
+bot.run(config['discord']['token'])
 # async def search(interaction: discord.Interaction, query: str):
 #     await interaction.response.defer()
     
