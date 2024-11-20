@@ -582,7 +582,7 @@ async def search(interaction: discord.Interaction, query: str):
             )
     
     await interaction.followup.send(embed=embed)
-print(config['discord']['token'])
+
 bot.run(config['discord']['token'])
 # async def search(interaction: discord.Interaction, query: str):
 #     await interaction.response.defer()
