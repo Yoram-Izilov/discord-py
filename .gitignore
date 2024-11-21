@@ -2,3 +2,4 @@
 .idea/
 config-local.json
 rss_feed.txt
+.data/

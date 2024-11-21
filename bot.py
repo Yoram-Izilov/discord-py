@@ -165,7 +165,7 @@ async def roulette(interaction: discord.Interaction, options: str):
     await chart_and_annouce(interaction, expanded_options, counts)
     
 # Helper functions to read and write to the options file
-FILE_PATH = "roulette_options.txt"
+FILE_PATH = "/data/roulette_options.txt"
 
 def read_options(file_path):
     with open(file_path, "r") as file:
@@ -345,7 +345,7 @@ async def play(interaction: discord.Interaction, url: str):
         await interaction.followup.send(f"An error occurred: {e}")
 
 
-rss_titles = 'rss_feed.txt'                     # File to store RSS feed subscriptions
+rss_titles = '/data/rss_feed.txt'                     # File to store RSS feed subscriptions
 rss_url = "https://subsplease.org/rss/?r=1080"  # The URL of the RSS feed
 announcement_channel_id = 571380049044045826    # Channel ID where announcements will be sent
 
