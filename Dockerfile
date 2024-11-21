@@ -15,7 +15,6 @@ RUN apt-get update && apt-get install -y \
 
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
-
     
 # Command to run your application
 CMD ["python", "bot.py"]
