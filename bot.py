@@ -333,9 +333,14 @@ async def play(interaction: discord.Interaction, url: str):
                     before_options="-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5",
                     options="-vn"
                 )
-                # Play the audio in the voice channel
-                voice_client.play(source, after=lambda e: asyncio.create_task(leave(interaction)))
-                
+                def after_playback(error):
+                        if error:
+                            print(f"Error during playback: {error}")
+                        bot.loop.create_task(voice_client.disconnect())
+
+                # Play the audio and set the `after` parameter
+                voice_client.play(source, after=after_playback)
+            
                 # Send a follow-up message indicating the song is now playing
                 await interaction.followup.send(f"Now playing: {info['title']}")
             else:
