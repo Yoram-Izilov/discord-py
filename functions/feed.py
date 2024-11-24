@@ -197,3 +197,13 @@ async def check_for_new_episodes(bot):
                         index = saved_rss.index(line)
                         saved_rss[index] = f"{parts[0]}|RSS|{parts[1]}|RSS|{matching_entry[0]}" 
     write_saved_rss(saved_rss)
+
+async def rss_menu(interaction: discord.Interaction, action):
+    if action.value == "add_rss":
+        await add_rss(interaction)
+    elif action.value == "view_rss":
+        await view_rss(interaction)
+    elif action.value == "remove_rss":
+        await remove_rss(interaction)
+    else:
+        await interaction.response.send_message("Invalid option selected.", ephemeral=True)
