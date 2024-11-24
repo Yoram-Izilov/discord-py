@@ -223,3 +223,16 @@ async def add_auto_roulette(interaction: discord.Interaction, option_line: str):
     lines.append(option_line.strip())
     write_options(FILE_PATH, lines)
     await interaction.response.send_message(f"Added the new option set: `{option_line.strip()}`")
+
+async def auto_roulette_menu(interaction: discord.Interaction, action, add_option):
+    if action.value == "start_roulette":
+        await auto_roulette(interaction)
+    elif action.value == "add_roulette":
+        if add_option is None:
+            await interaction.response.send_message("Please provide a string for the new roulette option:", ephemeral=True)
+            return
+        await add_auto_roulette(interaction, add_option)
+    elif action.value == "remove_roulette":
+        await remove_auto_roulette(interaction)
+    else:
+        await interaction.response.send_message("Invalid option selected.", ephemeral=True)
