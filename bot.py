@@ -1,10 +1,10 @@
 import os
 import json
 import discord
-from discord.ext import commands, tasks
+from discord.ext import commands
 from discord import app_commands
 # all discord user functions
-from functions.roulettes import roulette, auto_roulette, remove_auto_roulette, add_auto_roulette
+from functions.roulettes import roulette, auto_roulette_menu
 from functions.voice import play, leave
 from functions.feed import add_rss, view_rss, remove_rss, check_for_new_episodes
 from functions.nyaa import search
@@ -47,20 +47,15 @@ async def roulette_command(interaction: discord.Interaction, options: str):
     await roulette(interaction, options)
 
 # Slash command: auto_roulette
-@bot.tree.command(name="auto_roulette", description="Choose from saved options and update them automatically")
-async def auto_roulette_command(interaction: discord.Interaction):
-    await auto_roulette(interaction)
-
-# Slash command: remove_auto_roulette
-@bot.tree.command(name="remove_auto_roulette", description="Remove an option set from the file")
-async def remove_auto_roulette_command(interaction: discord.Interaction):
-    await remove_auto_roulette(interaction)
-
-# Slash command: add_auto_roulette
-@bot.tree.command(name="add_auto_roulette", description="Add a new option set to the file")
-@app_commands.describe(option_line="A comma-separated list of options (e.g., yoram,uriel|1,ofek|2)")
-async def add_auto_roulette_command(interaction: discord.Interaction, option_line: str):
-    await add_auto_roulette(interaction, option_line)
+@bot.tree.command(name="auto_roulette", description="Manage auto roulettes")
+@app_commands.describe(action="Choose an action for the auto roulette", add_option="Optional string for 'Add Roulette'")
+@app_commands.choices(action=[
+    app_commands.Choice(name="Start Roulette", value="start_roulette"),
+    app_commands.Choice(name="Add Roulette", value="add_roulette"),
+    app_commands.Choice(name="Remove Roulette", value="remove_roulette"),
+])
+async def auto_roulette_command(interaction: discord.Interaction, action: app_commands.Choice[str], add_option: str = None):
+    await auto_roulette_menu(interaction, action, add_option)
 
 #endregion
 
@@ -72,8 +67,11 @@ async def leave_command(interaction: discord.Interaction):
     await leave(interaction)
 
 # Slash command to join and play music from a YouTube URL
-@bot.tree.command(name="play", description="Play music from a YouTube URL")
-async def play_command(interaction: discord.Interaction, url: str):
+@bot.tree.command(name="play", description="Play music from a YouTube URL or search term")
+@app_commands.describe(url="URL of the YouTube video", search="Search query for music")
+async def play_command(interaction: discord.Interaction, url: str = None, search: str = None):
+    # Ensure that only one of the options is provided
+    provided_options = [url, search]
     await play(interaction, url, bot)
 
 #endregion
