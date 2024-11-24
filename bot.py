@@ -8,7 +8,7 @@ from functions.roulettes import roulette, auto_roulette, remove_auto_roulette, a
 from functions.voice import play, leave
 from functions.feed import add_rss, view_rss, remove_rss, check_for_new_episodes
 from functions.nyaa import search
-from functions.mal import scrape
+from functions.mal import scrape, add_users_mal, update_watching
 
 # Set up the bot with the required intents and command prefix
 intents = discord.Intents.all()
@@ -111,6 +111,14 @@ async def search_command(interaction: discord.Interaction, query: str):
 async def scrape_command(interaction: discord.Interaction):
     await scrape(interaction)
 
+@bot.tree.command(name="add_mal_user", description="Add a mal user")
+@app_commands.describe(option_line="Give user.")
+async def add_mal_user_command(interaction: discord.Interaction, option_line: str):
+    await add_users_mal(interaction, option_line)
+
+@bot.tree.command(name="update_watching", description="Update the watching anime.")
+async def update_watching_command(interaction: discord.Interaction):
+    await update_watching(interaction)
 #endregion 
 
 bot.run(config['discord']['token'])
