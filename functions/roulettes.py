@@ -224,7 +224,6 @@ async def add_auto_roulette(interaction: discord.Interaction, option_line: str):
     write_options(FILE_PATH, lines)
     await interaction.response.send_message(f"Added the new option set: `{option_line.strip()}`")
 
-
 async def auto_roulette_menu(interaction: discord.Interaction, action, add_option):
     if action.value == "start_roulette":
         await auto_roulette(interaction)

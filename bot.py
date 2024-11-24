@@ -6,7 +6,7 @@ from discord import app_commands
 # all discord user functions
 from functions.roulettes import roulette, auto_roulette_menu
 from functions.voice import play, leave
-from functions.feed import add_rss, view_rss, remove_rss, check_for_new_episodes
+from functions.feed import rss_menu, check_for_new_episodes
 from functions.nyaa import search
 from functions.mal import scrape
 
@@ -78,20 +78,16 @@ async def play_command(interaction: discord.Interaction, url: str = None, search
 
 #region rss
 
-# Command to add an episode to the RSS feed
-@bot.tree.command(name="add_rss", description="Add an episode to your RSS feed")
-async def add_rss_command(interaction: discord.Interaction):
-    await add_rss(interaction)
-
-# Command to view all saved RSS subscriptions
-@bot.tree.command(name="view_rss", description="View all your saved RSS subscriptions")
-async def view_rss_command(interaction: discord.Interaction):
-    await view_rss(interaction)
-
-# Command to remove an episode from the RSS feed
-@bot.tree.command(name="remove_rss", description="Remove an episode from your RSS feed")
-async def remove_rss_command(interaction: discord.Interaction):
-    await remove_rss(interaction)
+# RSS menu
+@bot.tree.command(name="rss", description="Manage your RSS feed")
+@app_commands.describe(action="choose what to do with the RSS feed")
+@app_commands.choices(action=[
+    app_commands.Choice(name="Add RSS", value="add_rss"),
+    app_commands.Choice(name="View RSS", value="view_rss"),
+    app_commands.Choice(name="Remove RSS", value="remove_rss"),
+])
+async def rss_command(interaction: discord.Interaction, action: app_commands.Choice[str]):
+    await rss_menu(interaction, action)
      
 #endregion
 
