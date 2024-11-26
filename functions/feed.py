@@ -44,7 +44,7 @@ def fetch_rss_feed():
             "guid": entry.guid,
             "pubDate": entry.published,
             "series": entry.category,
-            "size": entry.get("subsplease:size", "N/A")  # Handling custom namespace field
+            "size": entry.get("subsplease_size", "N/A")  # Handling custom namespace field
         }
         for entry in feed.entries
     ]
@@ -75,10 +75,8 @@ async def add_rss(interaction: discord.Interaction, search):
     # Get the list of existing series from the JSON file
     existing_series = get_series()
     # Filter out series that are already in the JSON file
-    if search:
-        filtered_series = [series for series in sanitized_rss_data if series not in existing_series and search.lower() in series.lower()]
-    else:
-        filtered_series = [series for series in sanitized_rss_data if series not in existing_series]
+    search = search if search is not None else ""
+    filtered_series = [series for series in sanitized_rss_data if series not in existing_series and search.lower() in series.lower()]
 
     select_menus    = create_select_menus(filtered_series)
     async def select_callback(interaction: discord.Interaction):
