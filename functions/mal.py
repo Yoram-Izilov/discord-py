@@ -14,31 +14,29 @@ class Statuses(Enum):
     DROPPED = 4
     PLAN_TO_WATCH = 6
 
+bot_channel_id = 571462116612112384    # Channel ID where announcements will be sent
+
 mal_profiles = 'data/mal_profile.txt'
-currently_watching = 'data/currently_watching.txt'
-plan_to_watch = 'data/plan_to_watch.txt'
+currently_watching = f'data/anime_list/{Statuses.CURRENTLY_WATCHING.value}.txt'
+plan_to_watch = f'data/anime_list/{Statuses.PLAN_TO_WATCH.value}.txt'
+files = [mal_profiles, currently_watching, plan_to_watch]
 
+def check_if_file_exist(file_path):
+    os.makedirs(os.path.dirname(file_path), exist_ok=True)
+    if not os.path.exists(file_path):
+        with open(file_path, 'w', encoding='utf-8') as f:
+            pass
 
-if not os.path.exists(mal_profiles):
-    with open(mal_profiles, 'w') as f:
-        pass
-if not os.path.exists(currently_watching):
-    with open(currently_watching, 'w') as f:
-        pass
-if not os.path.exists(plan_to_watch):
-    with open(plan_to_watch, 'w') as f:
-        pass
+for file in files:
+    check_if_file_exist(file)
 
 def read_options(file_path):
-    with open(file_path, "r") as file:
+    with open(file_path, "r", encoding='utf-8') as file:
         return [line.strip() for line in file.readlines()]
 
 def write_options(file_path, options):
-    with open(file_path, "w") as file:
+    with open(file_path, "w", encoding='utf-8') as file:
         file.write("\n".join(options))
-
-async def scrape(interaction):
-    titles = scrape()
 
 async def mal_menu(interaction: discord.Interaction, action, user: str = None):
     if action.value == "add_user":
@@ -47,6 +45,18 @@ async def mal_menu(interaction: discord.Interaction, action, user: str = None):
         await view_users_mal(interaction)
     elif action.value == "remove_user":
         await remove_users_mal(interaction, user)
+    else:
+        await interaction.response.send_message("Invalid option selected.", ephemeral=True)
+
+async def anime_list_menu(bot, interaction: discord.Interaction, action, user: str = None):
+    if action.value == "update_watching_list":
+        await update_anime_list(bot, interaction, Statuses.CURRENTLY_WATCHING.value)
+    elif action.value == "update_plantowatch_list":
+        await update_anime_list(bot, interaction, Statuses.PLAN_TO_WATCH.value)
+    elif action.value == "view_watching_list":
+        await view_anime_list(interaction, Statuses.CURRENTLY_WATCHING.value)
+    elif action.value == "view_plantowatch_list":
+        await view_anime_list(interaction, Statuses.PLAN_TO_WATCH.value)
     else:
         await interaction.response.send_message("Invalid option selected.", ephemeral=True)
 
@@ -66,14 +76,33 @@ async def remove_users_mal(interaction, user: str):
     write_options(mal_profiles, lines)
     await interaction.response.send_message(f"Removed the new option set: `{user.strip()}`")
 
-async def update_watching(interaction):
+async def update_anime_list(bot, interaction, status):
     await interaction.response.send_message(f"Will be updated.")
 
+    file_address = f'data/anime_list/{status}.txt'
     users = read_options(mal_profiles)
     titles = []
+
     for user in users:
-        titles.extend(scrape(user, Statuses.CURRENTLY_WATCHING.value))
-    write_options(currently_watching, titles)
+        titles.extend(scrape(user, status))
+
+    write_options(file_address, titles)
+
+    channel = bot.get_channel(bot_channel_id)
+    name = Statuses(status).name
+
+    await channel.send(f"Finish to update {name} list.")
+
+
+async def view_anime_list(interaction, status):
+    max_letters = 2000
+    file_address = f'data/anime_list/{status}.txt'
+    anime_list = read_options(file_address)
+    if len(anime_list) > 0:
+        await interaction.response.send_message("\n".join(anime_list)[:max_letters])
+    else:
+        await interaction.response.send_message("No anime.")
+
 
 def scrape(user, status):
     # Set up Selenium options
@@ -99,10 +128,10 @@ def scrape(user, status):
         try:
             # Extract title
             title = row.find_element(By.CSS_SELECTOR, "td.title").text.split('\n')[0]
-
             titles.append(title)
         except Exception as e:
             print(f"Error parsing row: {e}")
+    print('Finish scrape.')
     return titles
 
     # Quit the driver
