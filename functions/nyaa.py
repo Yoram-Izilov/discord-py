@@ -41,14 +41,13 @@ async def search(interaction: discord.Interaction, query: str):
             # Create formatted links
             torrent_url = f"{base_url}{torrent_path}"
             # Convert magnet to web URL
-            encoded_magnet = urllib.parse.quote(magnet_link)
-            web_magnet = f"https://magnet2torrent.com/upload/magnet/?magnet={encoded_magnet}"
+            magnet_url = f"{base_url}{torrent_path}/magnet"
             
             # Add field for each result
             embed.add_field(
                 name=f"📥 {size} | 📅 {date}",
                 value=f"```{title[:200]}```\n" + 
-                        f"[🔗 Torrent]({torrent_url}) | [🧲 Web Magnet]({web_magnet})",
+                        f"[🔗 Torrent]({torrent_url}) | [🧲 Web Magnet]({magnet_url})",
                 inline=False
             )
     
