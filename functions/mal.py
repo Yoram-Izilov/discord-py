@@ -6,6 +6,9 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
 
+from functions.roulettes import roulette
+
+
 class Statuses(Enum):
     ALL_ANIME = 0
     CURRENTLY_WATCHING = 1
@@ -60,21 +63,27 @@ async def anime_list_menu(bot, interaction: discord.Interaction, action, user: s
     else:
         await interaction.response.send_message("Invalid option selected.", ephemeral=True)
 
+async def next_anime(interaction: discord.Interaction):
+    file_address = f'data/anime_list/{Statuses.PLAN_TO_WATCH.value}.txt'
+    anime_list = read_options(file_address)
+    anime_roulete_string = ",".join(anime_list)
+    await roulette(interaction, anime_roulete_string)
+
 async def add_users_mal(interaction, user: str):
     lines = read_options(mal_profiles)
     lines.append(user.strip())
     write_options(mal_profiles, lines)
-    await interaction.response.send_message(f"Added the new user: `{user.strip()}`")
+    await interaction.response.send_message(f"Added the new user: {user.strip()}")
 
 async def view_users_mal(interaction):
     lines = read_options(mal_profiles)
-    await interaction.response.send_message(f"Users: `{", ".join(lines)}`")
+    await interaction.response.send_message(f"Users: {', '.join(lines)}")
 
 async def remove_users_mal(interaction, user: str):
     lines = read_options(mal_profiles)
     lines.remove(user.strip())
     write_options(mal_profiles, lines)
-    await interaction.response.send_message(f"Removed the new option set: `{user.strip()}`")
+    await interaction.response.send_message(f"Removed the new option set: {user.strip()}")
 
 async def update_anime_list(bot, interaction, status):
     await interaction.response.send_message(f"Will be updated.")
