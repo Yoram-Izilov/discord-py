@@ -50,16 +50,9 @@ def fetch_rss_feed():
     ]
 
 # Create dropdown menus for the rss from the Subsplease feed
-def create_select_menus(rss_data):
+def create_select_menus(filtered_series):
     menus       = []
     max_options = 25  # Discord's limit per select menu
-    # Only sanitize the series name (not the entire dictionary)
-    sanitized_rss_data = [sanitize_option(entry['series']) for entry in rss_data]
-    # Get the list of existing series from the JSON file
-    existing_series = get_series()
-    # Filter out series that are already in the JSON file
-    filtered_series = [series for series in sanitized_rss_data if series not in existing_series]
-
     # Loop over the series and create select menus in chunks of max_options
     for i in range(0, len(filtered_series), max_options):
         options = [
@@ -74,9 +67,20 @@ def create_select_menus(rss_data):
     return menus
 
 # Add rss to json file
-async def add_rss(interaction: discord.Interaction):
+async def add_rss(interaction: discord.Interaction, search):
     rss_data        = fetch_rss_feed()  # Fetch RSS feed
-    select_menus    = create_select_menus(rss_data)
+    # Only sanitize the series name (not the entire dictionary)
+    sanitized_rss_data = [sanitize_option(entry['series']) for entry in rss_data]
+    sanitized_rss_data = list(set(sanitized_rss_data)) # removes dupes
+    # Get the list of existing series from the JSON file
+    existing_series = get_series()
+    # Filter out series that are already in the JSON file
+    if search:
+        filtered_series = [series for series in sanitized_rss_data if series not in existing_series and search.lower() in series.lower()]
+    else:
+        filtered_series = [series for series in sanitized_rss_data if series not in existing_series]
+
+    select_menus    = create_select_menus(filtered_series)
     async def select_callback(interaction: discord.Interaction):
         selected_series = interaction.data['values'][0]
         # Find the full entry that matches the selected series
@@ -97,7 +101,10 @@ async def add_rss(interaction: discord.Interaction):
         select_menu.callback = select_callback
         view.add_item(select_menu)
 
-    await interaction.response.send_message("Select a series to add to your feed:", view=view)
+    if len(filtered_series) > 0:
+        await interaction.response.send_message("Select a series to add to your feed:", view=view)
+    else:
+        await interaction.response.send_message("If you can't spell, DON'T :)")
 
 # View current rss feeds
 async def view_rss(interaction):
@@ -189,9 +196,9 @@ async def check_for_new_episodes(bot):
     # Save the updated subscriptions back to the JSON file
     save_json_data(json_file_path, saved_entries)
 
-async def rss_menu(interaction: discord.Interaction, action):
+async def rss_menu(interaction: discord.Interaction, action, search):
     if action.value     == "add_rss":
-        await add_rss(interaction)
+        await add_rss(interaction, search)
     elif action.value   == "view_rss":
         await view_rss(interaction)
     elif action.value   == "remove_rss":

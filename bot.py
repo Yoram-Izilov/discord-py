@@ -86,8 +86,8 @@ async def play_command(interaction: discord.Interaction, url: str = None, search
     app_commands.Choice(name="View RSS", value="view_rss"),
     app_commands.Choice(name="Remove RSS", value="remove_rss"),
 ])
-async def rss_command(interaction: discord.Interaction, action: app_commands.Choice[str]):
-    await rss_menu(interaction, action)
+async def rss_command(interaction: discord.Interaction, action: app_commands.Choice[str], search: str = None):
+    await rss_menu(interaction, action, search)
      
 #endregion
 
