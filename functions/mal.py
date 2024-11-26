@@ -6,6 +6,8 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
 
+from functions.roulettes import roulette
+
 class Statuses(Enum):
     ALL_ANIME = 0
     CURRENTLY_WATCHING = 1
@@ -59,6 +61,12 @@ async def anime_list_menu(bot, interaction: discord.Interaction, action, user: s
         await view_anime_list(interaction, Statuses.PLAN_TO_WATCH.value)
     else:
         await interaction.response.send_message("Invalid option selected.", ephemeral=True)
+
+async def next_anime(interaction: discord.Interaction):
+    file_address = f'data/anime_list/{Statuses.PLAN_TO_WATCH.value}.txt'
+    anime_list = read_options(file_address)
+    anime_roulete_string = ",".join(anime_list)
+    await roulette(interaction, anime_roulete_string)
 
 async def add_users_mal(interaction, user: str):
     lines = read_options(mal_profiles)

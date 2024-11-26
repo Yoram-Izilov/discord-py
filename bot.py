@@ -8,7 +8,7 @@ from functions.roulettes import roulette, auto_roulette_menu
 from functions.voice import play, leave
 from functions.feed import rss_menu, check_for_new_episodes
 from functions.nyaa import search
-from functions.mal import mal_menu, anime_list_menu
+from functions.mal import mal_menu, anime_list_menu, next_anime
 
 # Set up the bot with the required intents and command prefix
 intents = discord.Intents.all()
@@ -120,8 +120,12 @@ async def mal_command(interaction: discord.Interaction, action: app_commands.Cho
     app_commands.Choice(name="View plan to watch list", value="view_plantowatch_list"),
 
 ])
-async def mal_command(interaction: discord.Interaction, action: app_commands.Choice[str]):
+async def anime_list_command(interaction: discord.Interaction, action: app_commands.Choice[str]):
     await anime_list_menu(bot, interaction, action)
+
+@bot.tree.command(name="next_anime", description="roulete from plan to watch anime.")
+async def next_anime_command(interaction: discord.Interaction):
+    await next_anime(interaction)
 
 #endregion 
 
