@@ -40,11 +40,31 @@ def write_options(file_path, options):
 async def scrape(interaction):
     titles = scrape()
 
-async def add_users_mal(interaction, option_line: str):
+async def mal_menu(interaction: discord.Interaction, action, user: str = None):
+    if action.value == "add_user":
+        await add_users_mal(interaction, user)
+    elif action.value == "view_users":
+        await view_users_mal(interaction)
+    elif action.value == "remove_user":
+        await remove_users_mal(interaction, user)
+    else:
+        await interaction.response.send_message("Invalid option selected.", ephemeral=True)
+
+async def add_users_mal(interaction, user: str):
     lines = read_options(mal_profiles)
-    lines.append(option_line.strip())
+    lines.append(user.strip())
     write_options(mal_profiles, lines)
-    await interaction.response.send_message(f"Added the new option set: `{option_line.strip()}`")
+    await interaction.response.send_message(f"Added the new user: `{user.strip()}`")
+
+async def view_users_mal(interaction):
+    lines = read_options(mal_profiles)
+    await interaction.response.send_message(f"Users: `{", ".join(lines)}`")
+
+async def remove_users_mal(interaction, user: str):
+    lines = read_options(mal_profiles)
+    lines.remove(user.strip())
+    write_options(mal_profiles, lines)
+    await interaction.response.send_message(f"Removed the new option set: `{user.strip()}`")
 
 async def update_watching(interaction):
     await interaction.response.send_message(f"Will be updated.")
