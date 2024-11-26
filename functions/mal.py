@@ -8,7 +8,6 @@ from selenium.webdriver.chrome.options import Options
 
 from functions.roulettes import roulette
 
-
 class Statuses(Enum):
     ALL_ANIME = 0
     CURRENTLY_WATCHING = 1
