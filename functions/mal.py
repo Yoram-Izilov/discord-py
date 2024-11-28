@@ -1,7 +1,4 @@
-import os
-from enum import Enum
 
-import discord
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
@@ -33,7 +30,7 @@ async def anime_list_menu(bot, interaction: discord.Interaction, action, user: s
         await interaction.response.send_message("Invalid option selected.", ephemeral=True)
 
 async def next_anime(interaction: discord.Interaction):
-    file_address = MAL_STATUSES_TEMPLATE.substitute(status=Statuses.PLAN_TO_WATCH.value)
+    file_address = MAL_STATUSES_FORMAT.format(Statuses.PLAN_TO_WATCH.value)
 
     anime_list = load_text_data(file_address)
     anime_roulete_string = ",".join(anime_list)
@@ -58,7 +55,7 @@ async def remove_users_mal(interaction, user: str):
 async def update_anime_list(bot, interaction, status):
     await interaction.response.send_message(f"Will be updated.")
 
-    file_address = MAL_STATUSES_TEMPLATE.substitute(status=status)
+    file_address = MAL_STATUSES_FORMAT.format(status)
 
     users = load_text_data(MAL_PROFILE_PATH)
     titles = []
@@ -75,7 +72,7 @@ async def update_anime_list(bot, interaction, status):
 
 
 async def view_anime_list(interaction, status):
-    file_address = MAL_STATUSES_TEMPLATE.substitute(status=status)
+    file_address = MAL_STATUSES_FORMAT.format(status)
 
     anime_list = load_text_data(file_address)
     if len(anime_list) > 0:
@@ -95,7 +92,7 @@ def scrape(user, status):
     driver = webdriver.Chrome(options=chrome_options)
 
     # Open the page
-    url = f"https://myanimelist.net/animelist/{user}?status={status}"
+    url = MAL_LIST_FORMAT.format(user, status)
     driver.get(url)
 
     # Wait for the page to load (important for JavaScript-rendered content)
