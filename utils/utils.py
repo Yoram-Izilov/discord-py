@@ -33,7 +33,7 @@ def get_json_field_as_array(file_path, field):
 
 # region Text
 
-# Function to load existing data from the JSON file
+# Function to load existing data from the file
 def load_text_data(file_path):
     if os.path.exists(file_path):
         with open(file_path, 'r', encoding='utf-8') as file:
@@ -41,7 +41,7 @@ def load_text_data(file_path):
     else:
         return [] # Return an empty list if the file does not exist
 
-# Function to save data to the JSON file
+# Function to save data to the file
 def save_text_data(file_path, data):
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
     with open(file_path, 'w', encoding='utf-8') as file:

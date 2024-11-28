@@ -15,8 +15,8 @@ MAL_PROFILE_PATH        = 'data/mal_profile.txt'
 CONFIG_LOCAL_PATH       = 'config/config-local.json'
 CONFIG_PATH             = 'config/config.json'
 
-MAL_STATUSES_FORMAT   = 'data/anime_list/{}.txt'
-MAL_LIST_FORMAT       = 'https://myanimelist.net/animelist/{}?status={}'
+MAL_STATUSES_FORMAT     = 'data/anime_list/{}.txt'
+MAL_LIST_FORMAT         = 'https://myanimelist.net/animelist/{}?status={}'
 
 BOT_CHANNEL_ID          = 571462116612112384                # Channel ID where announcements will be sent
 OTAKU_CHANNEL_ID        = 571380049044045826                    # Channel ID where announcements will be sent
