@@ -1,42 +1,13 @@
-import os, discord, feedparser, requests, json
+import discord, feedparser, requests, json
 from discord.ext import tasks
 from datetime import datetime
 
-json_file_path          = 'data/rss_data.json'                  # File to store RSS feed subscriptions
-rss_url                 = "https://subsplease.org/rss/?r=1080"  # The URL of the RSS feed
-announcement_channel_id = 571380049044045826                    # Channel ID where announcements will be sent
-
-# Function to load existing data from the JSON file
-def load_json_data(file_path):
-    if os.path.exists(file_path):
-        with open(file_path, 'r', encoding='utf-8') as file:
-            try:
-                return json.load(file)  # Try loading JSON data
-            except json.JSONDecodeError:  # Handle case where the file is empty or invalid
-                return []  # Return an empty list if the file is invalid or empty
-    else:
-        return []  # Return an empty list if the file does not exist
-
-# Function to save data to the JSON file
-def save_json_data(file_path, data):
-    with open(file_path, 'w', encoding='utf-8') as file:
-        json.dump(data, file, indent=4)
-
-# Helper function to sanitize titles for both label and value (ensure length is between 1 and 100)
-def sanitize_option(title):
-    max_length = 100
-    if len(title) > max_length:
-        title = title[:max_length]
-    return title or "Unknown Title"
-
-# Get all series name fron the JSON file
-def get_series():
-    json_data = load_json_data(json_file_path)
-    return [item["series"] for item in json_data]
+from utils.utils import *
+from config.consts import *
 
 # Fetch the RSS feed and parse it
 def fetch_rss_feed():
-    feed = feedparser.parse(rss_url)
+    feed = feedparser.parse(RSS_URL)
     return [
         {
             "title": entry.title,
@@ -49,45 +20,29 @@ def fetch_rss_feed():
         for entry in feed.entries
     ]
 
-# Create dropdown menus for the rss from the Subsplease feed
-def create_select_menus(filtered_series):
-    menus       = []
-    max_options = 25  # Discord's limit per select menu
-    # Loop over the series and create select menus in chunks of max_options
-    for i in range(0, len(filtered_series), max_options):
-        options = [
-            discord.SelectOption(
-                label=series,  # Display the sanitized series name
-                value=series  # Use the corresponding series name as the value
-            )
-            for series in filtered_series[i:i + max_options]
-        ]
-        select_menu = discord.ui.Select(placeholder="Choose a series to add", options=options)
-        menus.append(select_menu)
-    return menus
-
 # Add rss to json file
 async def add_rss(interaction: discord.Interaction, search):
-    rss_data        = fetch_rss_feed()  # Fetch RSS feed
+    rss_data = fetch_rss_feed()  # Fetch RSS feed
     # Only sanitize the series name (not the entire dictionary)
     sanitized_rss_data = [sanitize_option(entry['series']) for entry in rss_data]
     sanitized_rss_data = list(set(sanitized_rss_data)) # removes dupes
     # Get the list of existing series from the JSON file
-    existing_series = get_series()
+    existing_series = get_json_field_as_array(RSS_FILE_PATH, "series")
     # Filter out series that are already in the JSON file
-    search = search if search is not None else ""
+    search          = search if search is not None else ""
     filtered_series = [series for series in sanitized_rss_data if series not in existing_series and search.lower() in series.lower()]
 
     select_menus    = create_select_menus(filtered_series)
+
     async def select_callback(interaction: discord.Interaction):
         selected_series = interaction.data['values'][0]
         # Find the full entry that matches the selected series
         selected_entry = next((entry for entry in rss_data if entry['series'] == selected_series), None)
         if selected_entry:
             # Add the selected full entry to the JSON file
-            json_data = load_json_data(json_file_path)
+            json_data = load_json_data(RSS_FILE_PATH)
             json_data.append(selected_entry)  # Append the entire entry
-            save_json_data(json_file_path, json_data)
+            save_json_data(RSS_FILE_PATH, json_data)
             # Respond with a confirmation message
             await interaction.response.send_message(f'Series "{selected_series}" has been added to the feed!')
         else:
@@ -106,7 +61,7 @@ async def add_rss(interaction: discord.Interaction, search):
 
 # View current rss feeds
 async def view_rss(interaction):
-    my_series = get_series()
+    my_series = get_json_field_as_array(RSS_FILE_PATH, "series")
     if not my_series:
         await interaction.response.send_message("Your RSS feed is empty.")
     else:
@@ -115,14 +70,14 @@ async def view_rss(interaction):
 
 # Remove a series from the JSON file
 def remove_series(series_to_remove):
-    json_data = load_json_data(json_file_path)
+    json_data = load_json_data(RSS_FILE_PATH)
     # Remove all items where the series matches the one to delete
     updated_data = [item for item in json_data if item["series"] != series_to_remove]
-    save_json_data(json_file_path, updated_data)
+    save_json_data(RSS_FILE_PATH, updated_data)
 
 # Remove a series from the JSON file
 async def remove_rss(interaction):
-    series_list = get_series()
+    series_list = get_json_field_as_array(RSS_FILE_PATH, "series")
     if not series_list:
         await interaction.response.send_message("No series found to remove.", ephemeral=True)
         return
@@ -143,7 +98,7 @@ async def remove_rss(interaction):
 
 # Creates magnet url for the new rss episode
 async def announce_new_episode(title, magnet_link, bot):
-    channel = bot.get_channel(announcement_channel_id) 
+    channel = bot.get_channel(OTAKU_CHANNEL_ID) 
     # Insert magnet link into API (if required)
     apiUrl          = "https://tormag.ezpz.work/api/api.php?action=insertMagnets"
     data            = { "magnets": [magnet_link] }
@@ -169,7 +124,7 @@ def parse_pub_date(date_str):
 @tasks.loop(hours=1)
 async def check_for_new_episodes(bot):
     feed_entries    = fetch_rss_feed()                  # RSS feed entries from URL
-    saved_entries   = load_json_data(json_file_path)    # Current subscriptions from the JSON file
+    saved_entries   = load_json_data(RSS_FILE_PATH)    # Current subscriptions from the JSON file
 
     # Iterate through each feed entry and compare it with saved entries
     for feed_entry in feed_entries:
@@ -192,7 +147,7 @@ async def check_for_new_episodes(bot):
                 
                 await announce_new_episode(matching_entry["title"], matching_entry["link"], bot)
     # Save the updated subscriptions back to the JSON file
-    save_json_data(json_file_path, saved_entries)
+    save_json_data(RSS_FILE_PATH, saved_entries)
 
 async def rss_menu(interaction: discord.Interaction, action, search):
     if action.value     == "add_rss":
