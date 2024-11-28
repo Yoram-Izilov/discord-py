@@ -20,6 +20,7 @@ def load_json_data(file_path):
 
 # Function to save data to the JSON file
 def save_json_data(file_path, data):
+    os.makedirs(os.path.dirname(file_path), exist_ok=True)
     with open(file_path, 'w', encoding='utf-8') as file:
         json.dump(data, file, indent=4)
 
@@ -27,6 +28,24 @@ def save_json_data(file_path, data):
 def get_json_field_as_array(file_path, field):
     json_data = load_json_data(file_path)
     return [item[field] for item in json_data]
+
+# endregion
+
+# region Text
+
+# Function to load existing data from the file
+def load_text_data(file_path):
+    if os.path.exists(file_path):
+        with open(file_path, 'r', encoding='utf-8') as file:
+                return [line.strip() for line in file.readlines()]
+    else:
+        return [] # Return an empty list if the file does not exist
+
+# Function to save data to the file
+def save_text_data(file_path, data):
+    os.makedirs(os.path.dirname(file_path), exist_ok=True)
+    with open(file_path, 'w', encoding='utf-8') as file:
+        file.write("\n".join(data))
 
 # endregion
 

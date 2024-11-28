@@ -3,6 +3,8 @@ import json
 import discord
 from discord.ext import commands
 from discord import app_commands
+
+from config.consts import *
 # all discord user functions
 from functions.roulettes import roulette, auto_roulette_menu
 from functions.voice import play, leave
@@ -17,8 +19,9 @@ intents.guilds = True           # Required to join voice channels
 bot = commands.Bot(command_prefix='/', intents=intents)
 
 def load_config():
-    local_config = 'config-local.json'
-    default_config = 'config.json'
+    local_config = CONFIG_LOCAL_PATH
+    default_config = CONFIG_PATH
+
     if os.path.exists(local_config):
         config_file = local_config
         print(f"Using local configuration: {local_config}")
