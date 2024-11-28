@@ -8,6 +8,23 @@ class Statuses(Enum):
     DROPPED             = 4
     PLAN_TO_WATCH       = 6
 
+class RouletteObject(Enum):
+    name    = 0
+    count   = 1
+
+class Colors(Enum):
+    blue    = '#66b3ff'
+    red     = '#ff9999'
+    green   = '#99ff99'
+    purple  = '#c2c2f0'
+    cyan    = '#2aebe1'
+    pink    = '#ff66f7'
+
+
+CHART_BAR_COLORS        = list(map(lambda x: x.value, Colors)) 
+MAX_BAR_CHAR            = int(10)
+WINNER_COLOR            = '#FFAA1D'
+
 RSS_URL                 = "https://subsplease.org/rss/?r=1080"  # The URL of the RSS feed
 
 RSS_FILE_PATH           = 'data/rss_data.json'                  # File to store RSS feed subscriptions
