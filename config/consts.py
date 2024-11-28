@@ -27,6 +27,8 @@ WINNER_COLOR            = '#FFAA1D'
 
 RSS_URL                 = "https://subsplease.org/rss/?r=1080"  # The URL of the RSS feed
 
+
+AUTO_ROULETTE_PATH      = "data/roulette_options.txt" # Helper functions to read and write to the options file
 RSS_FILE_PATH           = 'data/rss_data.json'                  # File to store RSS feed subscriptions
 MAL_PROFILE_PATH        = 'data/mal_profile.txt'
 CONFIG_LOCAL_PATH       = 'config/config-local.json'

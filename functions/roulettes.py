@@ -1,9 +1,10 @@
 import random
 import discord
 from utils.utils import *
+from config.consts import *
 
 async def roulette(interaction: discord.Interaction, options: str):
-    dict_options    = {}
+    dict_options    = {}  
     # Parse the input options
     for option in options.split(','):
         name, count = process_option(option)
@@ -16,115 +17,85 @@ async def roulette(interaction: discord.Interaction, options: str):
 
     if len(dict_options.keys()) < 1: # not a single valid choice in roulette
         return await interaction.response.send_message("Insert at least one valid option..")
-        
+    
     winner = choose_winner(dict_options.items())
-    embed, file = chart_and_annouce(dict_options, winner, interaction.user.name)
-    await interaction.response.send_message(embed=embed, file=file)
+    if len(dict_options.keys()) < 7: 
+        embed, file = chart_and_annouce(dict_options, winner, interaction.user.name)
+        await interaction.response.send_message(embed=embed, file=file)
+    else:
+        await interaction.response.send_message(
+            f"The winner is:{winner[RouletteObject.name.value]}"
+        )
+    return winner[RouletteObject.name.value]
 
-# Helper functions to read and write to the options file
-FILE_PATH = "data/roulette_options.txt"
-
-def read_options(file_path):
-    with open(file_path, "r") as file:
-        return [line.strip() for line in file.readlines()]
-
-def write_options(file_path, options):
-    with open(file_path, "w") as file:
-        file.write("\n".join(options))
-
-def parse_options(option_line):
-    options = []
-    for item in option_line.split(","):
-        item = item.strip()
-        if "|" in item:
-            name, count_str = item.split("|", 1)
-            count = int(count_str)
-        else:
-            name, count = item, 1
-        options.append((name.strip(), count))
-    return options
-
+# updates the current auto roulette after roulette
 def update_options(options, winner):
-    updated_options = []
-    for name, count in options:
+    updated_auto_roulette = []
+    for option in options.split(','):
+        name, count = process_option(option)
         if name == winner:
-            updated_options.append(f"{name}")
-        else:
-            updated_options.append(f"{name}|{count + 1}")
-    return updated_options
+            updated_auto_roulette.append(f"{name}")
+        elif count != 0:
+            updated_auto_roulette.append(f"{name}|{count + 1}")
+    return updated_auto_roulette
 
+# choosing one from the user saved roulette 
 async def auto_roulette(interaction: discord.Interaction):
-    lines = read_options(FILE_PATH)
+    lines = load_text_data(AUTO_ROULETTE_PATH)
     if not lines:
-        await interaction.response.send_message("No options are available. Please add some using `/add_auto_roulette`.")
+        await interaction.response.send_message("No options are available. Please add some using `/roulette`.")
         return
     
     # Create dropdown menu options
-    class OptionSelect(discord.ui.Select):
-        def __init__(self):
-            options = [
-                discord.SelectOption(label=line, value=f"{i}")
-                for i, line in enumerate(lines)
-            ]
-            super().__init__(placeholder="Choose an option set...", options=options)
+    select_menus = create_select_menus(lines)
+    async def select_callback(interaction: discord.Interaction):
+        selected_roulette = interaction.data['values'][0]
+        winner = await roulette(interaction, selected_roulette)
+        new_roulette = update_options(selected_roulette, winner) 
 
-        async def callback(self, interaction: discord.Interaction):
-            index = int(self.values[0])
-            option_line = lines[index]
-            options = parse_options(option_line)
-            
-            # Perform roulette logic
-            expanded_options = [name for name, count in options for _ in range(count)]
-            winner = random.choice(expanded_options)
+        if selected_roulette.strip() not in lines:
+            index = next((i for i, line in enumerate(lines) if line == selected_roulette), None)
+            lines[index] = ",".join(new_roulette)
+            save_text_data(AUTO_ROULETTE_PATH, lines)
 
-            # Update options based on the winner
-            updated_options = update_options(options, winner)
-            lines[index] = ",".join(updated_options)
-            write_options(FILE_PATH, lines)
+    # Create a view for the select menus
+    view = discord.ui.View()
+    for select_menu in select_menus:
+        select_menu.callback = select_callback
+        view.add_item(select_menu)
 
-            # Create a pie chart
-            counts = {name: count for name, count in options}
-            await chart_and_annouce(interaction, expanded_options, counts)
-
-    class OptionSelectView(discord.ui.View):
-        def __init__(self):
-            super().__init__()
-            self.add_item(OptionSelect())
-
-    await interaction.response.send_message("Select an option set:", view=OptionSelectView())
+    await interaction.response.send_message("Choose an option from the dropdown.", view=view)
 
 async def remove_auto_roulette(interaction: discord.Interaction):
-    lines = read_options(FILE_PATH)
+    lines = load_text_data(AUTO_ROULETTE_PATH)
     if not lines:
-        await interaction.response.send_message("No options are available. Please add some using `/add_auto_roulette`.")
-        return
+        return await interaction.response.send_message("No options are available. Please add some using `/add_auto_roulette`.")
+    
+    # Create dropdown menu options
+    select_menus = create_select_menus(lines)
+    async def select_callback(interaction: discord.Interaction):
+        selected_roulette = interaction.data['values'][0]
+        index = next((i for i, line in enumerate(lines) if line == selected_roulette), None)
+        removed_line = lines.pop(index)
+        save_text_data(AUTO_ROULETTE_PATH, lines)
+        return await interaction.response.send_message(f"Removed the option set: `{removed_line}`")
 
-    class RemoveOptionSelect(discord.ui.Select):
-        def __init__(self):
-            options = [
-                discord.SelectOption(label=line, value=f"{i}")
-                for i, line in enumerate(lines)
-            ]
-            super().__init__(placeholder="Select a set to remove...", options=options)
+     # Create a view for the select menus
+    view = discord.ui.View()
+    for select_menu in select_menus:
+        select_menu.callback = select_callback
+        view.add_item(select_menu)
 
-        async def callback(self, interaction: discord.Interaction):
-            index = int(self.values[0])
-            removed_line = lines.pop(index)
-            write_options(FILE_PATH, lines)
-            await interaction.response.send_message(f"Removed the option set: `{removed_line}`")
-
-    class RemoveOptionView(discord.ui.View):
-        def __init__(self):
-            super().__init__()
-            self.add_item(RemoveOptionSelect())
-
-    await interaction.response.send_message("Select an option set to remove:", view=RemoveOptionView())
+    return await interaction.response.send_message("Choose an option from the dropdown.", view=view)
 
 async def add_auto_roulette(interaction: discord.Interaction, option_line: str):
-    lines = read_options(FILE_PATH)
+    lines = load_text_data(AUTO_ROULETTE_PATH)
+    # Check if the option_line already exists in the file
+    if option_line.strip() in lines:
+        return await interaction.response.send_message(f"The option set `{option_line.strip()}` already exists.")
     lines.append(option_line.strip())
-    write_options(FILE_PATH, lines)
-    await interaction.response.send_message(f"Added the new option set: `{option_line.strip()}`")
+    save_text_data(AUTO_ROULETTE_PATH, lines)
+    return await interaction.response.send_message(f"Added the new option set: `{option_line.strip()}`")
 
 async def auto_roulette_menu(interaction: discord.Interaction, action, add_option):
     if action.value == "start_roulette":

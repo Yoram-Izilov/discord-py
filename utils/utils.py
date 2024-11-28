@@ -65,7 +65,7 @@ def sanitize_option(str):
 
 # Creates multiple dropdown menus
 def create_select_menus(items):
-    menus = []  
+    menus = []
     # Loop over the arr and create select menus in chunks of DROPDOWN_MAX_ITEMS
     for i in range(0, len(items), DROPDOWN_MAX_ITEMS):
         options = [
@@ -132,7 +132,6 @@ def chart_and_annouce(dict_options, winner, username):
     
     # Dynamically adjust bottom margin based on maximum text height
     max_height = max(len(textwrap.wrap(label, width=MAX_BAR_CHAR)) for label in labels)
-    print(max_height)
     margin_bottom = 0.03 + (max_height * 0.03)
     plt.subplots_adjust(bottom=margin_bottom)
 
