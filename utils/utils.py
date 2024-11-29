@@ -1,15 +1,10 @@
 from functools import reduce
 import os
-<<<<<<< HEAD
-=======
-import json
 import random
-import discord
 import io
 from discord import Embed
 import textwrap
 import matplotlib.pyplot as plt
->>>>>>> b309a8c07bd1d00d101dbb99e432a702d40eecda
 from config.consts import *
 import discord, feedparser, json
 
