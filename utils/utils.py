@@ -1,13 +1,16 @@
 from functools import reduce
 import os
-import json
 import random
-import discord
 import io
 from discord import Embed
 import textwrap
 import matplotlib.pyplot as plt
 from config.consts import *
+import discord, feedparser, json
+
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.chrome.options import Options
 
 # region JSON
 
@@ -79,6 +82,79 @@ def create_select_menus(items):
         menus.append(select_menu)
     return menus
 
+# endregion
+
+# region feed
+
+# Fetch the RSS feed and parse it
+def fetch_rss_feed():
+    feed = feedparser.parse(RSS_URL)
+    return [
+        {
+            "title": entry.title,
+            "link": entry.link,
+            "guid": entry.guid,
+            "pubDate": entry.published,
+            "series": entry.category,
+            "size": entry.get("subsplease_size", "N/A")  # Handling custom namespace field
+        }
+        for entry in feed.entries
+    ]
+
+# endregion
+
+# region anime list
+
+def scrape_mal(user, status):
+    # Set up Selenium options
+    chrome_options = Options()
+    chrome_options.add_argument("--headless")  # Run in headless mode (no browser window)
+    chrome_options.add_argument("--disable-gpu")  # For systems without GPU support
+    chrome_options.add_argument("--no-sandbox")
+
+    # Start the WebDriver
+    driver = webdriver.Chrome(options=chrome_options)
+
+    # Open the page
+    url = MAL_LIST_FORMAT.format(user, status)
+    driver.get(url)
+
+    # Wait for the page to load (important for JavaScript-rendered content)
+    driver.implicitly_wait(10)  # Adjust time if needed
+
+    # Extract anime titles and additional data
+    anime_rows = driver.find_elements(By.CSS_SELECTOR, "tr.list-table-data")
+    titles = []
+    for row in anime_rows:
+        try:
+            # Extract title
+            title = row.find_element(By.CSS_SELECTOR, "td.title").text.split('\n')[0]
+            titles.append(title)
+        except Exception as e:
+            print(f"Error parsing row: {e}")
+    print('Finish scrape.')
+
+    # Quit the driver
+    driver.quit()
+
+    return titles
+
+
+
+def update_anime_list(status):
+    file_address = MAL_STATUSES_FORMAT.format(status)
+
+    users = load_text_data(MAL_PROFILE_PATH)
+    titles = []
+
+    for user in users:
+        titles.extend(scrape_mal(user, status))
+
+    save_text_data(file_address, titles)
+
+    name = Statuses(status).name
+
+    return name
 # endregion
 
 # region Roulette
