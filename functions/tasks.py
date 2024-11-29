@@ -70,8 +70,9 @@ async def check_for_new_anime(bot):
 
     rss_data = fetch_rss_feed()
     existing_series = get_json_field_as_array(RSS_FILE_PATH, "series")
-    feed_names = list(map(lambda x: x["series"].strip().lower(), rss_data))
+    feed_names = list(map(lambda x: x["series"], rss_data))
     filtered_series = [series for series in feed_names if series not in existing_series]
+    filtered_series = list(map(lambda x: x.strip().lower(), filtered_series))
     filtered_series = list(set(filtered_series))
 
     currently_watching = load_text_data(MAL_STATUSES_FORMAT.format(Statuses.CURRENTLY_WATCHING.value))
