@@ -1,24 +1,5 @@
-import discord, feedparser, requests, json
-from discord.ext import tasks
-from datetime import datetime
-
 from utils.utils import *
 from config.consts import *
-
-# Fetch the RSS feed and parse it
-def fetch_rss_feed():
-    feed = feedparser.parse(RSS_URL)
-    return [
-        {
-            "title": entry.title,
-            "link": entry.link,
-            "guid": entry.guid,
-            "pubDate": entry.published,
-            "series": entry.category,
-            "size": entry.get("subsplease_size", "N/A")  # Handling custom namespace field
-        }
-        for entry in feed.entries
-    ]
 
 # Add rss to json file
 async def add_rss(interaction: discord.Interaction, search):
@@ -96,58 +77,6 @@ async def remove_rss(interaction):
     view.add_item(select_menu)
     await interaction.response.send_message("Select an episode to remove from your feed:", view=view)
 
-# Creates magnet url for the new rss episode
-async def announce_new_episode(title, magnet_link, bot):
-    channel = bot.get_channel(OTAKU_CHANNEL_ID) 
-    # Insert magnet link into API (if required)
-    apiUrl          = "https://tormag.ezpz.work/api/api.php?action=insertMagnets"
-    data            = { "magnets": [magnet_link] }
-    resp            = requests.post(apiUrl, json=data)
-    responseJson    = json.loads(resp.text)
-
-    # Check if the response contains the magnet entries
-    if "magnetEntries" in responseJson and responseJson["magnetEntries"]:
-        magnet_url = responseJson["magnetEntries"][0]  # Get the first magnet URL
-        # Format the message with the title as the clickable text
-        formatted_message = f"New Episode Available: [{title}]({magnet_url})\n"
-        await channel.send(formatted_message)
-    else:
-        # If no magnet URL is available or URL limit reached, log the error
-        formatted_message = (f"Error for {title}: {responseJson.get('message', 'No message in response')} \nhere is the magnet instead :D : \n{magnet_link}")
-        await channel.send(formatted_message)
-
-# Helper function to parse pubDate
-def parse_pub_date(date_str):
-    return datetime.strptime(date_str, "%a, %d %b %Y %H:%M:%S +0000")
-
-# Task to check for new episodes in saved RSS feed subscriptions
-@tasks.loop(hours=1)
-async def check_for_new_episodes(bot):
-    feed_entries    = fetch_rss_feed()                  # RSS feed entries from URL
-    saved_entries   = load_json_data(RSS_FILE_PATH)    # Current subscriptions from the JSON file
-
-    # Iterate through each feed entry and compare it with saved entries
-    for feed_entry in feed_entries:
-        # Find the corresponding saved entry by series name and GUID
-        matching_entry = next(
-            (entry for entry in saved_entries if entry["series"] == feed_entry["series"]), None
-        )
-        if matching_entry:
-            # If the saved entry exists, compare the pubDate to see if it has been updated
-            saved_pub_date  = parse_pub_date(matching_entry["pubDate"])
-            new_pub_date    = parse_pub_date(feed_entry["pubDate"])
-
-            # If the pubDate is newer, update the saved entry
-            if new_pub_date > saved_pub_date:
-                # Update the fields (you can add more fields as needed)
-                matching_entry["title"]     = feed_entry["title"]
-                matching_entry["link"]      = feed_entry["link"]
-                matching_entry["pubDate"]   = feed_entry["pubDate"]
-                matching_entry["size"]      = feed_entry["size"]
-                
-                await announce_new_episode(matching_entry["title"], matching_entry["link"], bot)
-    # Save the updated subscriptions back to the JSON file
-    save_json_data(RSS_FILE_PATH, saved_entries)
 
 async def rss_menu(interaction: discord.Interaction, action, search):
     if action.value     == "add_rss":

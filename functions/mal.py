@@ -1,8 +1,4 @@
 
-from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.chrome.options import Options
-
 from functions.roulettes import roulette
 from utils.utils import *
 
@@ -55,18 +51,8 @@ async def remove_users_mal(interaction, user: str):
 async def update_anime_list(bot, interaction, status):
     await interaction.response.send_message(f"Will be updated.")
 
-    file_address = MAL_STATUSES_FORMAT.format(status)
-
-    users = load_text_data(MAL_PROFILE_PATH)
-    titles = []
-
-    for user in users:
-        titles.extend(scrape(user, status))
-
-    save_text_data(file_address, titles)
-
     channel = bot.get_channel(BOT_CHANNEL_ID)
-    name = Statuses(status).name
+    name    = update_anime_list(status)
 
     await channel.send(f"Finish to update {name} list.")
 
@@ -81,36 +67,4 @@ async def view_anime_list(interaction, status):
         await interaction.response.send_message("No anime.")
 
 
-def scrape(user, status):
-    # Set up Selenium options
-    chrome_options = Options()
-    chrome_options.add_argument("--headless")  # Run in headless mode (no browser window)
-    chrome_options.add_argument("--disable-gpu")  # For systems without GPU support
-    chrome_options.add_argument("--no-sandbox")
 
-    # Start the WebDriver
-    driver = webdriver.Chrome(options=chrome_options)
-
-    # Open the page
-    url = MAL_LIST_FORMAT.format(user, status)
-    driver.get(url)
-
-    # Wait for the page to load (important for JavaScript-rendered content)
-    driver.implicitly_wait(10)  # Adjust time if needed
-
-    # Extract anime titles and additional data
-    anime_rows = driver.find_elements(By.CSS_SELECTOR, "tr.list-table-data")
-    titles = []
-    for row in anime_rows:
-        try:
-            # Extract title
-            title = row.find_element(By.CSS_SELECTOR, "td.title").text.split('\n')[0]
-            titles.append(title)
-        except Exception as e:
-            print(f"Error parsing row: {e}")
-    print('Finish scrape.')
-
-    return titles
-
-    # Quit the driver
-    driver.quit()

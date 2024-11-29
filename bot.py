@@ -8,9 +8,10 @@ from config.consts import *
 # all discord user functions
 from functions.roulettes import roulette, auto_roulette_menu
 from functions.voice import play, leave
-from functions.feed import rss_menu, check_for_new_episodes
+from functions.feed import rss_menu
 from functions.nyaa import search
 from functions.mal import mal_menu, anime_list_menu, next_anime
+from functions.tasks import check_for_new_episodes, check_for_new_anime
 
 # Set up the bot with the required intents and command prefix
 intents = discord.Intents.all()
@@ -40,6 +41,7 @@ async def on_ready():
     await bot.tree.sync()  # Syncs the slash commands with Discord
     print(f'Bot {bot.user} is now online and ready!')
     # starts all the automations (eg rss 1 hour loop check)
+    check_for_new_anime.start(bot)
     check_for_new_episodes.start(bot)
 
 #region roullete
