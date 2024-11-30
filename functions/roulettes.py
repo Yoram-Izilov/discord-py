@@ -1,4 +1,3 @@
-import random
 import discord
 from utils.utils import *
 from config.consts import *

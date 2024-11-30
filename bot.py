@@ -41,8 +41,8 @@ async def on_ready():
     await bot.tree.sync()  # Syncs the slash commands with Discord
     print(f'Bot {bot.user} is now online and ready!')
     # starts all the automations (eg rss 1 hour loop check)
-    check_for_new_anime.start(bot)
-    check_for_new_episodes.start(bot)
+    # check_for_new_anime.start(bot)
+    # check_for_new_episodes.start(bot)
 
 #region roullete
 
@@ -89,7 +89,9 @@ async def play_command(interaction: discord.Interaction, url: str = None, search
 @app_commands.choices(action=[
     app_commands.Choice(name="Add RSS", value="add_rss"),
     app_commands.Choice(name="View RSS", value="view_rss"),
+    app_commands.Choice(name="Sub To RSS", value="sub_to_rss"),
     app_commands.Choice(name="Remove RSS", value="remove_rss"),
+    app_commands.Choice(name="Unsub From RSS", value="unsub_from_rss"),
 ])
 async def rss_command(interaction: discord.Interaction, action: app_commands.Choice[str], search: str = None):
     await rss_menu(interaction, action, search)
