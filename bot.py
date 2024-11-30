@@ -41,8 +41,8 @@ async def on_ready():
     await bot.tree.sync()  # Syncs the slash commands with Discord
     print(f'Bot {bot.user} is now online and ready!')
     # starts all the automations (eg rss 1 hour loop check)
-    # check_for_new_anime.start(bot)
-    # check_for_new_episodes.start(bot)
+    check_for_new_anime.start(bot)
+    check_for_new_episodes.start(bot)
 
 #region roullete
 
