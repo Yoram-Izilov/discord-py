@@ -7,6 +7,8 @@ import textwrap
 import matplotlib.pyplot as plt
 from config.consts import *
 import discord, feedparser, json
+import discord
+import asyncio
 
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -82,6 +84,29 @@ def create_select_menus(items):
         menus.append(select_menu)
     return menus
 
+# returns the user selected item from the menu
+async def select_callback(interaction: discord.Interaction, user_choice: asyncio.Future):
+    selected_value = interaction.data['values'][0]
+    if not user_choice.done():
+        user_choice.set_result(selected_value)
+    await interaction.response.defer()  # Acknowledge the interaction
+
+# returns user selected option from dropdown user interaction
+async def dropdown_interactions(interaction: discord.Interaction, list, initial_text):
+    # creete the dropdown menus from list 
+    select_menus = create_select_menus(list)
+
+    # Create a view for the select menus
+    view = discord.ui.View()
+    # Create an asyncio Future to store the result of the selection
+    user_choice = asyncio.Future()
+    for select_menu in select_menus:
+        select_menu.callback = lambda interaction: select_callback(interaction, user_choice)
+        view.add_item(select_menu)
+
+    await interaction.response.send_message(initial_text, view=view)
+    return await user_choice
+
 # endregion
 
 # region feed
@@ -96,7 +121,8 @@ def fetch_rss_feed():
             "guid": entry.guid,
             "pubDate": entry.published,
             "series": entry.category,
-            "size": entry.get("subsplease_size", "N/A")  # Handling custom namespace field
+            "size": entry.get("subsplease_size", "N/A"),  # Handling custom namespace field
+            "subs": [] # List of users who have subscribed
         }
         for entry in feed.entries
     ]
