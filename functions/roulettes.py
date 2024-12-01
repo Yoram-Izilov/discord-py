@@ -1,6 +1,4 @@
-import discord
 from utils.utils import *
-from config.consts import *
 
 async def roulette(interaction: discord.Interaction, options: str):
     dict_options    = {}  

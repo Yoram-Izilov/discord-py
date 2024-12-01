@@ -66,7 +66,7 @@ async def check_for_new_episodes(bot):
 @tasks.loop(hours=24)
 async def check_for_new_anime(bot):
     channel = bot.get_channel(BOT_CHANNEL_ID)
-    update_anime_list(Statuses.CURRENTLY_WATCHING.value)
+    update_anime_list_by_status(Statuses.CURRENTLY_WATCHING.value)
 
     rss_data = fetch_rss_feed()
     existing_series = get_json_field_as_array(RSS_FILE_PATH, "series")

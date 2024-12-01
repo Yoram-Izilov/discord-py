@@ -2,7 +2,9 @@ import discord
 from discord.ext import commands
 from discord import app_commands
 
-from functions.config import config
+from utils.config import config
+from utils.logger import botLogger
+
 # all discord user functions
 from functions.roulettes import roulette, auto_roulette_menu
 from functions.voice import play, leave
@@ -11,14 +13,11 @@ from functions.nyaa import search
 from functions.mal import mal_menu, anime_list_menu, next_anime
 from functions.tasks import check_for_new_episodes, check_for_new_anime
 
-from utils.logger import LoggerUtils
-
 # Set up the bot with the required intents and command prefix
 intents = discord.Intents.all()
 intents.message_content = True  # Required for reading messages
 intents.guilds = True           # Required to join voice channels
 bot = commands.Bot(command_prefix='/', intents=intents)
-logger = LoggerUtils("bot", "bot.log").get_logger()
 
 
 @bot.event
@@ -36,6 +35,7 @@ async def on_ready():
 # Slash command: /roulette
 @bot.tree.command(name="roulette", description="Choose one of the provided options with count support and display a pie chart")
 async def roulette_command(interaction: discord.Interaction, options: str):
+    botLogger.info('run roulette_command')
     await roulette(interaction, options)
 
 # Slash command: auto_roulette
@@ -47,6 +47,7 @@ async def roulette_command(interaction: discord.Interaction, options: str):
     app_commands.Choice(name="Remove Roulette", value="remove_roulette"),
 ])
 async def auto_roulette_command(interaction: discord.Interaction, action: app_commands.Choice[str], add_option: str = None):
+    botLogger.info('run auto_roulette_command')
     await auto_roulette_menu(interaction, action, add_option)
 
 #endregion
@@ -56,6 +57,7 @@ async def auto_roulette_command(interaction: discord.Interaction, action: app_co
 # Slash command to leave the voice channel
 @bot.tree.command(name="leave", description="Disconnect from the voice channel")
 async def leave_command(interaction: discord.Interaction):
+    botLogger.info('run leave_command')
     await leave(interaction)
 
 # Slash command to join and play music from a YouTube URL
@@ -63,6 +65,7 @@ async def leave_command(interaction: discord.Interaction):
 @app_commands.describe(url="URL of the YouTube video", search="Search query for music")
 async def play_command(interaction: discord.Interaction, url: str = None, search: str = None):
     # Ensure that only one of the options is provided
+    botLogger.info('run play_command')
     provided_options = [url, search]
     await play(interaction, url, bot)
 
@@ -81,6 +84,7 @@ async def play_command(interaction: discord.Interaction, url: str = None, search
     app_commands.Choice(name="Unsub From RSS", value="unsub_from_rss"),
 ])
 async def rss_command(interaction: discord.Interaction, action: app_commands.Choice[str], search: str = None):
+    botLogger.info('run rss_menu')
     await rss_menu(interaction, action, search)
      
 #endregion
@@ -89,6 +93,7 @@ async def rss_command(interaction: discord.Interaction, action: app_commands.Cho
 
 @bot.tree.command(name="nyaa", description="Search for torrents on Nyaa")
 async def search_command(interaction: discord.Interaction, query: str):
+    botLogger.info('run search_command')
     await search(interaction, query)
 
 #endregion
@@ -103,6 +108,7 @@ async def search_command(interaction: discord.Interaction, query: str):
     app_commands.Choice(name="Remove user", value="remove_user"),
 ])
 async def mal_command(interaction: discord.Interaction, action: app_commands.Choice[str], user: str = None):
+    botLogger.info('run mal_command')
     await mal_menu(interaction, action, user)
 
 @bot.tree.command(name="anime_list", description="Manage anime list")
@@ -115,14 +121,16 @@ async def mal_command(interaction: discord.Interaction, action: app_commands.Cho
 
 ])
 async def anime_list_command(interaction: discord.Interaction, action: app_commands.Choice[str]):
+    botLogger.info('run anime_list_command')
     await anime_list_menu(bot, interaction, action)
 
 @bot.tree.command(name="next_anime", description="roulete from plan to watch anime.")
 async def next_anime_command(interaction: discord.Interaction):
+    botLogger.info('run next_anime_command')
     await next_anime(interaction)
 
 #endregion 
 
 bot.run(config.discord.token)
-logger.info('bot running')
+botLogger.info('bot stop running.')
 

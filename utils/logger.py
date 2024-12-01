@@ -15,7 +15,7 @@ class LoggerUtils:
         console_handler.setLevel(level)
 
         # Create formatter and add it to the handlers
-        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        formatter = logging.Formatter('[%(asctime)s] - [%(name)s] - [%(levelname)s] - %(message)s')
         file_handler.setFormatter(formatter)
         console_handler.setFormatter(formatter)
 
@@ -25,3 +25,5 @@ class LoggerUtils:
 
     def get_logger(self) -> Logger:
         return self.logger
+
+botLogger = LoggerUtils("bot", "bot.log").get_logger()

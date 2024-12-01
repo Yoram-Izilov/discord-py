@@ -1,5 +1,5 @@
 from utils.utils import *
-from config.consts import *
+from utils.config import *
 
 # Add rss to json file
 async def add_rss(interaction: discord.Interaction, search):
