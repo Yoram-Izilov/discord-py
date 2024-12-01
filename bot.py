@@ -1,10 +1,8 @@
-import os
-import json
 import discord
 from discord.ext import commands
 from discord import app_commands
 
-from config.consts import *
+from functions.config import config
 # all discord user functions
 from functions.roulettes import roulette, auto_roulette_menu
 from functions.voice import play, leave
@@ -20,23 +18,6 @@ intents = discord.Intents.all()
 intents.message_content = True  # Required for reading messages
 intents.guilds = True           # Required to join voice channels
 bot = commands.Bot(command_prefix='/', intents=intents)
-
-def load_config():
-    local_config = CONFIG_LOCAL_PATH
-    default_config = CONFIG_PATH
-
-    if os.path.exists(local_config):
-        config_file = local_config
-        print(f"Using local configuration: {local_config}")
-    elif os.path.exists(default_config):
-        config_file = default_config
-        print(f"Using default configuration: {default_config}")
-    else:
-        raise FileNotFoundError("Neither config-local.json nor config.json was found.")
-    with open(config_file, 'r') as file:
-        return json.load(file)
-    
-config = load_config()
 logger = LoggerUtils("bot", "bot.log").get_logger()
 
 
@@ -45,8 +26,10 @@ async def on_ready():
     await bot.tree.sync()  # Syncs the slash commands with Discord
     print(f'Bot {bot.user} is now online and ready!')
     # starts all the automations (eg rss 1 hour loop check)
-    check_for_new_anime.start(bot)
-    check_for_new_episodes.start(bot)
+    if not config.debug:
+        print('tasks running.')
+        check_for_new_anime.start(bot)
+        check_for_new_episodes.start(bot)
 
 #region roullete
 
@@ -140,5 +123,6 @@ async def next_anime_command(interaction: discord.Interaction):
 
 #endregion 
 
-bot.run(config['discord']['token'])
+bot.run(config.discord.token)
 logger.info('bot running')
+
