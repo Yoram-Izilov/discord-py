@@ -13,6 +13,8 @@ from functions.nyaa import search
 from functions.mal import mal_menu, anime_list_menu, next_anime
 from functions.tasks import check_for_new_episodes, check_for_new_anime
 
+from utils.logger import LoggerUtils
+
 # Set up the bot with the required intents and command prefix
 intents = discord.Intents.all()
 intents.message_content = True  # Required for reading messages
@@ -35,6 +37,8 @@ def load_config():
         return json.load(file)
     
 config = load_config()
+logger = LoggerUtils("bot", "bot.log").get_logger()
+
 
 @bot.event
 async def on_ready():
@@ -137,3 +141,4 @@ async def next_anime_command(interaction: discord.Interaction):
 #endregion 
 
 bot.run(config['discord']['token'])
+logger.info('bot running')
