@@ -5,14 +5,18 @@ import io
 from discord import Embed
 import textwrap
 import matplotlib.pyplot as plt
+
 from config.consts import *
-import discord, feedparser, json
+import feedparser, json
 import discord
 import asyncio
 
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
+
+from utils.logger import botLogger
+
 
 # region JSON
 
@@ -157,8 +161,9 @@ def scrape_mal(user, status):
             title = row.find_element(By.CSS_SELECTOR, "td.title").text.split('\n')[0]
             titles.append(title)
         except Exception as e:
-            print(f"Error parsing row: {e}")
-    print('Finish scrape.')
+            botLogger.error(f"Error parsing row: {e}")
+
+    botLogger.info(f'Finish scrape user: {user} with status: {status}')
 
     # Quit the driver
     driver.quit()
@@ -166,8 +171,7 @@ def scrape_mal(user, status):
     return titles
 
 
-
-def update_anime_list(status):
+def update_anime_list_by_status(status):
     file_address = MAL_STATUSES_FORMAT.format(status)
 
     users = load_text_data(MAL_PROFILE_PATH)

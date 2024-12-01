@@ -52,7 +52,7 @@ async def update_anime_list(bot, interaction, status):
     await interaction.response.send_message(f"Will be updated.")
 
     channel = bot.get_channel(BOT_CHANNEL_ID)
-    name    = update_anime_list(status)
+    name    = update_anime_list_by_status(status)
 
     await channel.send(f"Finish to update {name} list.")
 

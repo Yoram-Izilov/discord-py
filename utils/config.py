@@ -2,6 +2,8 @@ import json
 import os
 
 from config.consts import *
+from utils.logger import botLogger
+
 
 # Load config, can be local or not.
 def load_config():
@@ -10,11 +12,12 @@ def load_config():
 
     if os.path.exists(local_config):
         config_file = local_config
-        print(f"Using local configuration: {local_config}")
+        botLogger.info(f"Using local configuration: {local_config}")
     elif os.path.exists(default_config):
         config_file = default_config
-        print(f"Using default configuration: {default_config}")
+        botLogger.info(f"Using default configuration: {default_config}")
     else:
+        botLogger.error("Neither config-local.json nor config.json was found.")
         raise FileNotFoundError("Neither config-local.json nor config.json was found.")
     return AppConfig.from_json_file(config_file)
 
