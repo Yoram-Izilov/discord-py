@@ -35,14 +35,11 @@ async def add_rss(interaction: discord.Interaction, search):
         
 # View current rss feeds
 async def view_rss(interaction: discord.Interaction, search):
-    my_series   = get_json_field_as_array(RSS_FILE_PATH, "series")
+    my_series = get_json_field_as_array(RSS_FILE_PATH, "series")
     if not my_series:
         await interaction.response.send_message("Your RSS feed is empty.")
     else:
-        my_subs     = get_json_field_as_array(RSS_FILE_PATH, "subs") 
-        print(my_series)
-        print(my_subs)
-        rss_list    = "\n".join(my_series)
+        rss_list = "\n".join(my_series)
         await interaction.response.send_message(f"Your RSS subscriptions:\n```\n{rss_list}\n```")
 
 # Remove a series from the JSON file
