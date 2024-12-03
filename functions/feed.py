@@ -22,6 +22,9 @@ async def add_rss(interaction: discord.Interaction, search):
     if picked_option:
         selected_entry = next((entry for entry in rss_data if entry['series'] == picked_option), None)
         if selected_entry:
+            # Subscribe the user to the RSS
+            user = interaction.user
+            selected_entry["subs"].append(str(user.id))
             # Add the selected full entry to the JSON file
             json_data = load_json_data(RSS_FILE_PATH)
             json_data.append(selected_entry)  # Append the entire entry

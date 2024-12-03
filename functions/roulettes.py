@@ -50,7 +50,7 @@ async def auto_roulette(interaction: discord.Interaction):
         winner = await roulette(interaction, selected_roulette)
         new_roulette = update_options(selected_roulette, winner) 
 
-        if selected_roulette.strip() not in lines:
+        if selected_roulette in lines:
             index = next((i for i, line in enumerate(lines) if line == selected_roulette), None)
             lines[index] = ",".join(new_roulette)
             save_text_data(AUTO_ROULETTE_PATH, lines)
