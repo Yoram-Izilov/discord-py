@@ -1,19 +1,17 @@
+import requests
+from utils.utils import *
+from fuzzywuzzy import fuzz
 from datetime import datetime
 from discord.ext import tasks
-
-import requests
-from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
-from fuzzywuzzy import fuzz
-
-from utils.utils import *
+from sklearn.feature_extraction.text import TfidfVectorizer
 
 # Helper function to parse pubDate
 def parse_pub_date(date_str):
     return datetime.strptime(date_str, "%a, %d %b %Y %H:%M:%S +0000")
 
 # Creates magnet url for the new rss episode
-async def announce_new_episode(title, magnet_link, bot):
+async def announce_new_episode(title, magnet_link, subs, bot):
     channel = bot.get_channel(OTAKU_CHANNEL_ID)
     # Insert magnet link into API (if required)
     apiUrl          = "https://tormag.ezpz.work/api/api.php?action=insertMagnets"
@@ -24,8 +22,12 @@ async def announce_new_episode(title, magnet_link, bot):
     # Check if the response contains the magnet entries
     if "magnetEntries" in responseJson and responseJson["magnetEntries"]:
         magnet_url = responseJson["magnetEntries"][0]  # Get the first magnet URL
-        # Format the message with the title as the clickable text
+        # Format the title as the clickable text and mention all subscribers
         formatted_message = f"New Episode Available: [{title}]({magnet_url})\n"
+        # Mention all the users
+        user_mentions = " ".join([f"<@{user_id}>" for user_id in subs])
+        # Add the mentions to the formatted message
+        formatted_message += f"\n{user_mentions}"
         await channel.send(formatted_message)
     else:
         # If no magnet URL is available or URL limit reached, log the error
@@ -35,12 +37,13 @@ async def announce_new_episode(title, magnet_link, bot):
 # Task to check for new episodes in saved RSS feed subscriptions
 @tasks.loop(hours=1)
 async def check_for_new_episodes(bot):
+    botLogger.info('searching for new episodes from the RSS feed')
     feed_entries = fetch_rss_feed()  # RSS feed entries from URL
     saved_entries = load_json_data(RSS_FILE_PATH)  # Current subscriptions from the JSON file
 
     # Iterate through each feed entry and compare it with saved entries
     for feed_entry in feed_entries:
-        # Find the corresponding saved entry by series name and GUID
+        # Find the corresponding saved entry by series name
         matching_entry = next(
             (entry for entry in saved_entries if entry["series"] == feed_entry["series"]), None
         )
@@ -52,12 +55,12 @@ async def check_for_new_episodes(bot):
             # If the pubDate is newer, update the saved entry
             if new_pub_date > saved_pub_date:
                 # Update the fields (you can add more fields as needed)
-                matching_entry["title"] = feed_entry["title"]
-                matching_entry["link"] = feed_entry["link"]
-                matching_entry["pubDate"] = feed_entry["pubDate"]
-                matching_entry["size"] = feed_entry["size"]
+                matching_entry["pubDate"]   = feed_entry["pubDate"]
+                matching_entry["title"]     = feed_entry["title"]
+                matching_entry["link"]      = feed_entry["link"]
+                matching_entry["size"]      = feed_entry["size"]
 
-                await announce_new_episode(matching_entry["title"], matching_entry["link"], bot)
+                await announce_new_episode(matching_entry["title"], matching_entry["link"], matching_entry["subs"], bot)
     # Save the updated subscriptions back to the JSON file
     save_json_data(RSS_FILE_PATH, saved_entries)
 
