@@ -24,7 +24,10 @@ from opentelemetry.instrumentation.asyncio import AsyncioInstrumentor
 # Configure tracer provider
 resource = Resource.create({"service.name": "discord-bot"})
 provider = TracerProvider(resource=resource)
-exporter = OTLPSpanExporter()  # sends to Grafana / Tempo
+exporter = OTLPSpanExporter(
+    endpoint="tempo:4317",
+    insecure=True
+)  # sends to Grafana / Tempo
 processor = BatchSpanProcessor(exporter)
 provider.add_span_processor(processor)
 trace.set_tracer_provider(provider)
