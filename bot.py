@@ -13,6 +13,27 @@ from functions.nyaa import search
 from functions.mal import mal_menu, anime_list_menu, next_anime
 from functions.tasks import check_for_new_episodes, check_for_new_anime
 
+from opentelemetry import trace
+from opentelemetry.sdk.resources import Resource
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import BatchSpanProcessor
+from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
+
+from opentelemetry.instrumentation.asyncio import AsyncioInstrumentor
+
+# Configure tracer provider
+resource = Resource.create({"service.name": "discord-bot"})
+provider = TracerProvider(resource=resource)
+exporter = OTLPSpanExporter()  # sends to Grafana / Tempo
+processor = BatchSpanProcessor(exporter)
+provider.add_span_processor(processor)
+trace.set_tracer_provider(provider)
+
+# Instrument asyncio (important for Discord.py)
+AsyncioInstrumentor().instrument()
+
+tracer = trace.get_tracer(__name__)
+
 # Set up the bot with the required intents and command prefix
 intents = discord.Intents.all()
 intents.message_content = True  # Required for reading messages
@@ -22,6 +43,9 @@ bot = commands.Bot(command_prefix='/', intents=intents)
 
 @bot.event
 async def on_ready():
+    with tracer.start_as_current_span("on_ready"):
+        print(f"Logged in as {bot.user}")
+
     await bot.tree.sync()  # Syncs the slash commands with Discord
     print(f'Bot {bot.user} is now online and ready!')
     # starts all the automations (eg rss 1 hour loop check)
