@@ -1,5 +1,7 @@
 from utils.utils import *
+from utils.tracing import trace_function
 
+@trace_function
 async def roulette(interaction: discord.Interaction, options: str):
     dict_options    = {}  
     # Parse the input options
@@ -26,6 +28,7 @@ async def roulette(interaction: discord.Interaction, options: str):
     return winner[RouletteObject.name.value]
 
 # updates the current auto roulette after roulette
+@trace_function
 def update_options(options, winner):
     updated_auto_roulette = []
     for option in options.split(','):
@@ -37,6 +40,7 @@ def update_options(options, winner):
     return updated_auto_roulette
 
 # choosing one from the user saved roulette 
+@trace_function
 async def auto_roulette(interaction: discord.Interaction):
     lines = load_text_data(AUTO_ROULETTE_PATH)
     if not lines:
@@ -63,6 +67,7 @@ async def auto_roulette(interaction: discord.Interaction):
 
     await interaction.response.send_message("Choose an option from the dropdown.", view=view)
 
+@trace_function
 async def remove_auto_roulette(interaction: discord.Interaction):
     lines = load_text_data(AUTO_ROULETTE_PATH)
     if not lines:
@@ -85,6 +90,7 @@ async def remove_auto_roulette(interaction: discord.Interaction):
 
     return await interaction.response.send_message("Choose an option from the dropdown.", view=view)
 
+@trace_function
 async def add_auto_roulette(interaction: discord.Interaction, option_line: str):
     lines = load_text_data(AUTO_ROULETTE_PATH)
     # Check if the option_line already exists in the file
@@ -94,6 +100,7 @@ async def add_auto_roulette(interaction: discord.Interaction, option_line: str):
     save_text_data(AUTO_ROULETTE_PATH, lines)
     return await interaction.response.send_message(f"Added the new option set: `{option_line.strip()}`")
 
+@trace_function
 async def auto_roulette_menu(interaction: discord.Interaction, action, add_option):
     if action.value == "start_roulette":
         await auto_roulette(interaction)

@@ -1,8 +1,11 @@
 
 from functions.roulettes import roulette
+from functions.roulettes import roulette
 from utils.utils import *
+from utils.tracing import trace_function
 
 
+@trace_function
 async def mal_menu(interaction: discord.Interaction, action, user: str = None):
     if action.value == "add_user":
         await add_users_mal(interaction, user)
@@ -13,6 +16,7 @@ async def mal_menu(interaction: discord.Interaction, action, user: str = None):
     else:
         await interaction.response.send_message("Invalid option selected.", ephemeral=True)
 
+@trace_function
 async def anime_list_menu(bot, interaction: discord.Interaction, action, user: str = None):
     if action.value == "update_watching_list":
         await update_anime_list(bot, interaction, Statuses.CURRENTLY_WATCHING.value)
@@ -25,6 +29,7 @@ async def anime_list_menu(bot, interaction: discord.Interaction, action, user: s
     else:
         await interaction.response.send_message("Invalid option selected.", ephemeral=True)
 
+@trace_function
 async def next_anime(interaction: discord.Interaction):
     file_address = MAL_STATUSES_FORMAT.format(Statuses.PLAN_TO_WATCH.value)
 
@@ -32,22 +37,26 @@ async def next_anime(interaction: discord.Interaction):
     anime_roulete_string = ",".join(anime_list)
     await roulette(interaction, anime_roulete_string)
 
+@trace_function
 async def add_users_mal(interaction, user: str):
     lines = load_text_data(MAL_PROFILE_PATH)
     lines.append(user.strip())
     save_text_data(MAL_PROFILE_PATH, lines)
     await interaction.response.send_message(f"Added the new user: {user.strip()}")
 
+@trace_function
 async def view_users_mal(interaction):
     lines = load_text_data(MAL_PROFILE_PATH)
     await interaction.response.send_message(f"Users: {', '.join(lines)}")
 
+@trace_function
 async def remove_users_mal(interaction, user: str):
     lines = load_text_data(MAL_PROFILE_PATH)
     lines.remove(user.strip())
     save_text_data(MAL_PROFILE_PATH, lines)
     await interaction.response.send_message(f"Removed the new option set: {user.strip()}")
 
+@trace_function
 async def update_anime_list(bot, interaction, status):
     await interaction.response.send_message(f"Will be updated.")
 
@@ -57,6 +66,7 @@ async def update_anime_list(bot, interaction, status):
     await channel.send(f"Finish to update {name} list.")
 
 
+@trace_function
 async def view_anime_list(interaction, status):
     file_address = MAL_STATUSES_FORMAT.format(status)
 

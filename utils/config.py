@@ -3,9 +3,10 @@ import os
 
 from config.consts import *
 from utils.logger import botLogger
-
+from utils.tracing import trace_function
 
 # Load config, can be local or not.
+@trace_function
 def load_config():
     local_config = CONFIG_LOCAL_PATH
     default_config = CONFIG_PATH
@@ -20,9 +21,6 @@ def load_config():
         botLogger.error("Neither config-local.json nor config.json was found.")
         raise FileNotFoundError("Neither config-local.json nor config.json was found.")
     return AppConfig.from_json_file(config_file)
-
-
-import json
 
 
 class DiscordConfig:
@@ -42,6 +40,7 @@ class AppConfig:
         return f"AppConfig(discord={self.discord}, debug={self.debug})"
 
     @staticmethod
+    @trace_function
     def from_json_file(file_path: str):
         # Load JSON file
         with open(file_path, "r") as file:

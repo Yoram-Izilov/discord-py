@@ -1,7 +1,9 @@
 import yt_dlp
 import discord
 from discord import FFmpegPCMAudio
+from utils.tracing import trace_function
 
+@trace_function
 async def play(interaction: discord.Interaction, url: str, bot):
     # Acknowledge the interaction quickly to prevent timeout
     await interaction.response.defer()  # This acknowledges the interaction, allowing you to do further work
@@ -64,6 +66,7 @@ async def play(interaction: discord.Interaction, url: str, bot):
     except Exception as e:
         await interaction.followup.send(f"An error occurred: {e}")
 
+@trace_function
 async def leave(interaction: discord.Interaction):
     if interaction.guild.voice_client is not None:
         await interaction.guild.voice_client.disconnect()
