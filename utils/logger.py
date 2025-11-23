@@ -1,7 +1,9 @@
 import logging
 from logging import Logger
+from utils.tracing import trace_function
 
 class LoggerUtils:
+    @trace_function
     def __init__(self, name, log_file, level=logging.INFO):
         self.logger = logging.getLogger(name)
         self.logger.setLevel(level)
@@ -23,6 +25,7 @@ class LoggerUtils:
         self.logger.addHandler(file_handler)
         self.logger.addHandler(console_handler)
 
+    @trace_function
     def get_logger(self) -> Logger:
         return self.logger
 

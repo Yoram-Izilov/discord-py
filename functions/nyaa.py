@@ -2,7 +2,9 @@ import aiohttp
 import discord
 import urllib.parse
 from bs4 import BeautifulSoup
+from utils.tracing import trace_function
 
+@trace_function
 async def search(interaction: discord.Interaction, query: str):
     await interaction.response.defer()
     

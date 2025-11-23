@@ -1,5 +1,6 @@
 import requests
 from utils.utils import *
+from utils.tracing import trace_function
 from fuzzywuzzy import fuzz
 from datetime import datetime
 from discord.ext import tasks
@@ -7,10 +8,12 @@ from sklearn.metrics.pairwise import cosine_similarity
 from sklearn.feature_extraction.text import TfidfVectorizer
 
 # Helper function to parse pubDate
+@trace_function
 def parse_pub_date(date_str):
     return datetime.strptime(date_str, "%a, %d %b %Y %H:%M:%S +0000")
 
 # Creates magnet url for the new rss episode
+@trace_function
 async def announce_new_episode(title, magnet_link, subs, bot):
     channel = bot.get_channel(OTAKU_CHANNEL_ID)
     # Insert magnet link into API (if required)
@@ -36,6 +39,7 @@ async def announce_new_episode(title, magnet_link, subs, bot):
 
 # Task to check for new episodes in saved RSS feed subscriptions
 @tasks.loop(hours=1)
+@trace_function
 async def check_for_new_episodes(bot):
     botLogger.info('searching for new episodes from the RSS feed')
     feed_entries = fetch_rss_feed()  # RSS feed entries from URL
@@ -67,6 +71,7 @@ async def check_for_new_episodes(bot):
 
 # Task to check for new anime to add to the RSS feed subscriptions.
 @tasks.loop(hours=24)
+@trace_function
 async def check_for_new_anime(bot):
     channel = bot.get_channel(BOT_CHANNEL_ID)
     update_anime_list_by_status(Statuses.CURRENTLY_WATCHING.value)
@@ -96,10 +101,12 @@ async def check_for_new_anime(bot):
 
             await channel.send('I find a treasure: ' + selected_entry['series'] +' ,I added this to the RSS for you ;)')
 
+@trace_function
 def fuzz_similarity(str1, str2):
     similarity = fuzz.ratio(str1, str2) / 100
     return  similarity
 
+@trace_function
 def vector_similarity(str1, str2):
     vectorizer = TfidfVectorizer()
     vectors = vectorizer.fit_transform([str1, str2])
@@ -107,6 +114,7 @@ def vector_similarity(str1, str2):
 
     return similarity[0][0]
 
+@trace_function
 def string_similar(str1, str2):
     return fuzz_similarity(str1, str2) > 0.85 or vector_similarity(str1, str2) > 0.37
 

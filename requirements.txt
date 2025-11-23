@@ -18,3 +18,4 @@ opentelemetry-instrumentation
 opentelemetry-instrumentation-asyncio
 opentelemetry-exporter-otlp
 opentelemetry-instrumentation-discordpy
+python-Levenshtein

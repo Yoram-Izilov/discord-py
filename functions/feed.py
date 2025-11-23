@@ -1,7 +1,9 @@
 from utils.utils import *
 from utils.config import *
+from utils.tracing import trace_function
 
 # Add rss to json file
+@trace_function
 async def add_rss(interaction: discord.Interaction, search):
     rss_data = fetch_rss_feed()  # Fetch RSS feed
     # Only sanitize the series name (not the entire dictionary)
@@ -34,6 +36,7 @@ async def add_rss(interaction: discord.Interaction, search):
             return await interaction.followup.send(f'Could not find data for the series "{picked_option}".')
         
 # View current rss feeds
+@trace_function
 async def view_rss(interaction: discord.Interaction, search):
     my_series = get_json_field_as_array(RSS_FILE_PATH, "series")
     if not my_series:
@@ -43,6 +46,7 @@ async def view_rss(interaction: discord.Interaction, search):
         await interaction.response.send_message(f"Your RSS subscriptions:\n```\n{rss_list}\n```")
 
 # Remove a series from the JSON file
+@trace_function
 def remove_series(series_to_remove):
     json_data = load_json_data(RSS_FILE_PATH)
     # Remove all items where the series matches the one to delete
@@ -50,6 +54,7 @@ def remove_series(series_to_remove):
     save_json_data(RSS_FILE_PATH, updated_data)
 
 # Remove a series from the JSON file
+@trace_function
 async def remove_rss(interaction: discord.Interaction, search):
     series_list = get_json_field_as_array(RSS_FILE_PATH, "series")
     if not series_list:
@@ -62,6 +67,7 @@ async def remove_rss(interaction: discord.Interaction, search):
         remove_series(picked_option)
         await interaction.followup.send(f"The series **{picked_option}** has been removed successfully.")
 
+@trace_function
 async def sub_to_rss(interaction: discord.Interaction, search):
     user        = interaction.user
     rss_data    = load_json_data(RSS_FILE_PATH)
@@ -82,6 +88,7 @@ async def sub_to_rss(interaction: discord.Interaction, search):
             else:
                 return await interaction.followup.send(f"Already subscribed to {picked_option} RSS feed!")
 
+@trace_function
 async def unsub_from_rss(interaction: discord.Interaction, search):
     user        = interaction.user
     rss_data    = load_json_data(RSS_FILE_PATH)
@@ -103,6 +110,7 @@ async def unsub_from_rss(interaction: discord.Interaction, search):
             else:
                 return await interaction.followup.send(f"Already unsubscribed from {picked_option}")
 
+@trace_function
 async def rss_menu(interaction: discord.Interaction, action, search):
     action_map = {
         "add_rss": add_rss,

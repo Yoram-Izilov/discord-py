@@ -16,11 +16,13 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
 
 from utils.logger import botLogger
+from utils.tracing import trace_function
 
 
 # region JSON
 
 # Function to load existing data from the JSON file
+@trace_function
 def load_json_data(file_path):
     if os.path.exists(file_path):
         with open(file_path, 'r', encoding='utf-8') as file:
@@ -34,12 +36,14 @@ def load_json_data(file_path):
         return [] # Return an empty list if the file does not exist
 
 # Function to save data to the JSON file
+@trace_function
 def save_json_data(file_path, data):
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
     with open(file_path, 'w', encoding='utf-8') as file:
         json.dump(data, file, indent=4)
 
 # Get all series name fron the JSON file
+@trace_function
 def get_json_field_as_array(file_path, field):
     json_data = load_json_data(file_path)
     return [item[field] for item in json_data]
@@ -49,6 +53,7 @@ def get_json_field_as_array(file_path, field):
 # region Text
 
 # Function to load existing data from the file
+@trace_function
 def load_text_data(file_path):
     if os.path.exists(file_path):
         with open(file_path, 'r', encoding='utf-8') as file:
@@ -57,6 +62,7 @@ def load_text_data(file_path):
         return [] # Return an empty list if the file does not exist
 
 # Function to save data to the file
+@trace_function
 def save_text_data(file_path, data):
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
     with open(file_path, 'w', encoding='utf-8') as file:
@@ -67,12 +73,14 @@ def save_text_data(file_path, data):
 # region Discord
 
 # Helper function to sanitize titles for both label and value (ensure length is between 1 and 100)
+@trace_function
 def sanitize_option(str):
     if len(str) > DROPDOWN_TEXT_MAX_LEN:
         str = str[:DROPDOWN_TEXT_MAX_LEN]
     return str or "Unknown String"
 
 # Creates multiple dropdown menus
+@trace_function
 def create_select_menus(items):
     menus = []
     # Loop over the arr and create select menus in chunks of DROPDOWN_MAX_ITEMS
@@ -89,6 +97,7 @@ def create_select_menus(items):
     return menus
 
 # returns the user selected item from the menu
+@trace_function
 async def select_callback(interaction: discord.Interaction, user_choice: asyncio.Future):
     selected_value = interaction.data['values'][0]
     if not user_choice.done():
@@ -96,6 +105,7 @@ async def select_callback(interaction: discord.Interaction, user_choice: asyncio
     await interaction.response.defer()  # Acknowledge the interaction
 
 # returns user selected option from dropdown user interaction
+@trace_function
 async def dropdown_interactions(interaction: discord.Interaction, list, initial_text):
     # creete the dropdown menus from list 
     select_menus = create_select_menus(list)
@@ -116,6 +126,7 @@ async def dropdown_interactions(interaction: discord.Interaction, list, initial_
 # region feed
 
 # Fetch the RSS feed and parse it
+@trace_function
 def fetch_rss_feed():
     feed = feedparser.parse(RSS_URL)
     return [
@@ -135,6 +146,7 @@ def fetch_rss_feed():
 
 # region anime list
 
+@trace_function
 def scrape_mal(user, status):
     # Set up Selenium options
     chrome_options = Options()
@@ -171,6 +183,7 @@ def scrape_mal(user, status):
     return titles
 
 
+@trace_function
 def update_anime_list_by_status(status):
     file_address = MAL_STATUSES_FORMAT.format(status)
 
@@ -190,6 +203,7 @@ def update_anime_list_by_status(status):
 # region Roulette
 
 # Helper function to handle individual options
+@trace_function
 def process_option(option):
     option = option.strip()
     if option is None or option == "":
@@ -210,6 +224,7 @@ def process_option(option):
     return name.strip(), count
 
 # choose a winner based on % (gets [(name, count)])   
+@trace_function
 def choose_winner(arr):
     # total options in roullete 
     total_sum = reduce(lambda x,y: x + y, map(lambda x:x[1], arr))
@@ -222,6 +237,7 @@ def choose_winner(arr):
         random_number -= count
 
 # create roulette bar chart and announce the winner
+@trace_function
 def chart_and_annouce(dict_options, winner, username):
     total_count = reduce(lambda x,y: x + y, dict_options.values())
     win_percentage = (winner[RouletteObject.count.value] / total_count) * 100
