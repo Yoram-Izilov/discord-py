@@ -2,5 +2,5 @@
   "discord": {
     "token": "token"
   },
-  "debug": true
+  "debug": false
 }
