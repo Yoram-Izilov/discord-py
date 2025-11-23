@@ -85,8 +85,8 @@ async def sub_to_rss(interaction: discord.Interaction, search):
                 item["subs"].append(str(user.id))  # Update the subs array
                 save_json_data(RSS_FILE_PATH,rss_data)
                 return await interaction.followup.send(f"Successfully subscribed {user.mention} to {picked_option} RSS feed!") 
-            else:
-                return await interaction.followup.send(f"Already subscribed to {picked_option} RSS feed!")
+    
+    return await interaction.followup.send(f"Already subscribed to {picked_option} RSS feed!")
 
 @trace_function
 async def unsub_from_rss(interaction: discord.Interaction, search):
@@ -107,8 +107,8 @@ async def unsub_from_rss(interaction: discord.Interaction, search):
                 item["subs"].remove(str(user.id))
                 save_json_data(RSS_FILE_PATH,rss_data)
                 return await interaction.followup.send(f"Successfully removed {user.mention} from {picked_option} RSS feed :( but why?")
-            else:
-                return await interaction.followup.send(f"Already unsubscribed from {picked_option}")
+    
+    return await interaction.followup.send(f"Already unsubscribed from {picked_option}")
 
 @trace_function
 async def rss_menu(interaction: discord.Interaction, action, search):
