@@ -38,12 +38,32 @@ async def add_rss(interaction: discord.Interaction, search):
 # View current rss feeds
 @trace_function
 async def view_rss(interaction: discord.Interaction, search):
-    my_series = get_json_field_as_array(RSS_FILE_PATH, "series")
-    if not my_series:
+    user = interaction.user
+    rss_data = load_json_data(RSS_FILE_PATH)
+    
+    if not rss_data:
         await interaction.response.send_message("Your RSS feed is empty.")
-    else:
-        rss_list = "\n".join(my_series)
-        await interaction.response.send_message(f"Your RSS subscriptions:\n```\n{rss_list}\n```")
+        return
+    
+    # Filter series into subscribed and not subscribed
+    subscribed = [item["series"] for item in rss_data if str(user.id) in item["subs"]]
+    not_subscribed = [item["series"] for item in rss_data if str(user.id) not in item["subs"]]
+    
+    message = "**Your RSS Feed:**\n```\n"
+    
+    if subscribed:
+        message += "SUBSCRIBED:\n"
+        message += "\n".join(subscribed)
+    
+    if not_subscribed:
+        if subscribed:
+            message += "\n\nNOT SUBSCRIBED:\n"
+        else:
+            message += "NOT SUBSCRIBED:\n"
+        message += "\n".join(not_subscribed)
+    
+    message += "\n```"
+    await interaction.response.send_message(message)
 
 # Remove a series from the JSON file
 @trace_function
@@ -76,8 +96,14 @@ async def sub_to_rss(interaction: discord.Interaction, search):
     if not series_list:
         return await interaction.response.send_message("No series found to subscribe to :<", ephemeral=True)
     
+    # Filter to only series the user is NOT subscribed to
+    available_series = [item["series"] for item in rss_data if str(user.id) not in item["subs"]]
+    
+    if not available_series:
+        return await interaction.response.send_message("You are already subscribed to all series!", ephemeral=True)
+    
     initial_text = "Select a series to subscribe to:"
-    picked_option = await dropdown_interactions(interaction, series_list, initial_text)
+    picked_option = await dropdown_interactions(interaction, available_series, initial_text)
 
     if picked_option:
         for item in rss_data:
@@ -97,8 +123,14 @@ async def unsub_from_rss(interaction: discord.Interaction, search):
     if not series_list:
         return await interaction.response.send_message("No series found to unsub from :<.", ephemeral=True)
     
+    # Filter to only series the user IS subscribed to
+    subscribed_series = [item["series"] for item in rss_data if str(user.id) in item["subs"]]
+    
+    if not subscribed_series:
+        return await interaction.response.send_message("You are not subscribed to any series!", ephemeral=True)
+    
     initial_text = "Select a series to unsubscribe from:"
-    picked_option = await dropdown_interactions(interaction, series_list, initial_text)
+    picked_option = await dropdown_interactions(interaction, subscribed_series, initial_text)
 
     if picked_option:
         # Modify the subs array if series matches
