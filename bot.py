@@ -91,15 +91,13 @@ async def leave_command(interaction: discord.Interaction):
     botLogger.info('run leave_command')
     await leave(interaction)
 
-# Slash command to join and play music from a YouTube URL
+# Slash command to join and play music from a YouTube URL or search query
 @bot.tree.command(name="play", description="Play music from a YouTube URL or search term")
-@app_commands.describe(url="URL of the YouTube video", search="Search query for music")
+@app_commands.describe(query="YouTube URL or search query (e.g., 'vinland saga op 1' or 'https://youtu.be/...')")
 @trace_function
-async def play_command(interaction: discord.Interaction, url: str = None, search: str = None):
-    # Ensure that only one of the options is provided
+async def play_command(interaction: discord.Interaction, query: str):
     botLogger.info('run play_command')
-    provided_options = [url, search]
-    await play(interaction, url, bot)
+    await play(interaction, query, bot)
 
 #endregion
 
