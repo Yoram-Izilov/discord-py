@@ -4,7 +4,7 @@ import discord
 from bs4 import BeautifulSoup
 from utils.tracing import trace_function
 
-# nyaa search function - displays top 5 results from nyaa.si based on user query
+# nyaa search function - displays top 5 results from nyaa.si based on user query.
 @trace_function
 async def search(interaction: discord.Interaction, query: str):
     await interaction.response.defer()
