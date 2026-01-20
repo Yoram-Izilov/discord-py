@@ -1,8 +1,5 @@
 discord.py~=2.4.0
 yt-dlp~=2024.11.18
-ffmpeg-python
-PyNaCl
-asyncio
 matplotlib~=3.9.2
 feedparser~=6.0.11
 requests~=2.32.3
@@ -12,10 +9,13 @@ selenium~=4.26.1
 webdriver-manager==3.8.5
 scikit-learn~=1.5.2
 fuzzywuzzy~=0.18.0
-opentelemetry-api
-opentelemetry-sdk
+ffmpeg-python
+PyNaCl~=1.5.0
+asyncio~=3.4.3
+opentelemetry-api~=1.38.0
+opentelemetry-sdk~=1.38.0
 opentelemetry-instrumentation
 opentelemetry-instrumentation-asyncio
-opentelemetry-exporter-otlp
-opentelemetry-instrumentation-discordpy
-python-Levenshtein
+opentelemetry-exporter-otlp~=1.38.0
+opentelemetry-instrumentation-discordpy~=0.1.9
+python-Levenshtein~=0.27.3
