@@ -112,6 +112,7 @@ async def play_command(interaction: discord.Interaction, query: str):
     app_commands.Choice(name="Sub To RSS", value="sub_to_rss"),
     app_commands.Choice(name="Remove RSS", value="remove_rss"),
     app_commands.Choice(name="Unsub From RSS", value="unsub_from_rss"),
+    app_commands.Choice(name="view all RSS subs", value="all_rss_subscribe"),
 ])
 @trace_function
 async def rss_command(interaction: discord.Interaction, action: app_commands.Choice[str], search: str = None):

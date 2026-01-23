@@ -142,6 +142,51 @@ async def unsub_from_rss(interaction: discord.Interaction, search):
     
     return await interaction.followup.send(f"Already unsubscribed from {picked_option}")
 
+# View all rss subscriptions
+@trace_function
+async def all_rss_subscribe(interaction: discord.Interaction, search):
+    rss_data = load_json_data(RSS_FILE_PATH)
+    
+    if not rss_data:
+        await interaction.response.send_message("No RSS data found.")
+        return
+
+    await interaction.response.defer()
+    
+    message = "**All RSS Subscriptions:**\n"
+    has_subs = False
+    
+    for entry in rss_data:
+        series = entry.get("series")
+        subs = entry.get("subs", [])
+        
+        if subs:
+            has_subs = True
+            message += f"\n**{series}**:\n"
+            for sub_id in subs:
+                try:
+                    user = interaction.guild.get_member(int(sub_id))
+                    if not user:
+                        user = await interaction.client.fetch_user(int(sub_id))
+                    
+                    user_name = user.display_name if user else f"Unknown User ({sub_id})"
+                    message += f"- {user_name}\n"
+                except Exception:
+                    message += f"- Unknown User ({sub_id})\n"
+
+    if not has_subs:
+         await interaction.followup.send("No subscriptions found.")
+         return
+
+    if len(message) > 2000:
+        # Create a text file if message is too long
+        with io.BytesIO() as file_buffer:
+            file_buffer.write(message.encode('utf-8'))
+            file_buffer.seek(0)
+            await interaction.followup.send("The list is too long, here is a file:", file=discord.File(file_buffer, "subscriptions.txt"))
+    else:
+        await interaction.followup.send(message)
+
 @trace_function
 async def rss_menu(interaction: discord.Interaction, action, search):
     action_map = {
@@ -149,7 +194,8 @@ async def rss_menu(interaction: discord.Interaction, action, search):
         "view_rss": view_rss,
         "remove_rss": remove_rss,
         "sub_to_rss": sub_to_rss,
-        "unsub_from_rss": unsub_from_rss
+        "unsub_from_rss": unsub_from_rss,
+        "all_rss_subscribe": all_rss_subscribe
     }
     action_func = action_map.get(action.value)
 
