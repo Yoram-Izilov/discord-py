@@ -1,6 +1,7 @@
 from utils.utils import *
 from utils.config import *
 from utils.tracing import trace_function
+from functions.tasks import _run_new_episode_check_logic, announce_new_episode
 
 # Add rss to json file
 @trace_function
@@ -30,6 +31,7 @@ async def add_rss(interaction: discord.Interaction, search):
             # Add the selected full entry to the JSON file
             json_data = load_json_data(RSS_FILE_PATH)
             json_data.append(selected_entry)  # Append the entire entry
+            await announce_new_episode(selected_entry["title"], selected_entry["link"], selected_entry["subs"], bot)
             save_json_data(RSS_FILE_PATH, json_data)
             return await interaction.followup.send(f'Series "{picked_option}" has been added to the feed!') 
         else:
@@ -188,6 +190,12 @@ async def all_rss_subscribe(interaction: discord.Interaction, search):
         await interaction.followup.send(message)
 
 @trace_function
+async def check_rss_feed_command(interaction: discord.Interaction):
+    await interaction.response.defer(ephemeral=True)
+    await _run_new_episode_check_logic(interaction.client)
+    await interaction.followup.send("RSS feed check initiated and completed!", ephemeral=True)
+
+@trace_function
 async def rss_menu(interaction: discord.Interaction, action, search):
     action_map = {
         "add_rss": add_rss,
@@ -195,11 +203,15 @@ async def rss_menu(interaction: discord.Interaction, action, search):
         "remove_rss": remove_rss,
         "sub_to_rss": sub_to_rss,
         "unsub_from_rss": unsub_from_rss,
-        "all_rss_subscribe": all_rss_subscribe
+        "all_rss_subscribe": all_rss_subscribe,
+        "check_rss": check_rss_feed_command,
     }
     action_func = action_map.get(action.value)
 
     if action_func:
-        await action_func(interaction, search)
+        if action.value == "check_rss":
+            await action_func(interaction)
+        else:
+            await action_func(interaction, search)
     else:
         await interaction.response.send_message("Invalid option selected.", ephemeral=True)

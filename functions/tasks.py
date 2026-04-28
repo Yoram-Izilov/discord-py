@@ -36,9 +36,10 @@ async def announce_new_episode(title, magnet_link, subs, bot):
         # If no magnet URL is available or URL limit reached, log the error
         formatted_message = (f"Error for {title}: {responseJson.get('message', 'No message in response')} \nhere is the magnet instead :D : \n{magnet_link}")
         await channel.send(formatted_message)
+    botLogger.info('finished announcing new episode')
+
 
 # Task to check for new episodes in saved RSS feed subscriptions
-@tasks.loop(hours=1)
 @trace_function
 async def check_for_new_episodes(bot):
     botLogger.info('searching for new episodes from the RSS feed')
@@ -65,9 +66,16 @@ async def check_for_new_episodes(bot):
                 matching_entry["size"]      = feed_entry["size"]
 
                 await announce_new_episode(matching_entry["title"], matching_entry["link"], matching_entry["subs"], bot)
+    
+    botLogger.info('finished searching for new episodes from the RSS feed')
+
     # Save the updated subscriptions back to the JSON file
     save_json_data(RSS_FILE_PATH, saved_entries)
 
+# The actual task loop
+@tasks.loop(hours=1)
+async def _run_new_episode_check_logic(bot):
+    await check_for_new_episodes(bot)
 
 # Task to check for new anime to add to the RSS feed subscriptions.
 @tasks.loop(hours=24)
