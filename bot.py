@@ -12,7 +12,7 @@ from functions.voice import play, leave
 from functions.feed import rss_menu
 from functions.nyaa import search
 from functions.mal import mal_menu, anime_list_menu, next_anime
-from functions.tasks import check_for_new_episodes, check_for_new_anime
+from functions.tasks import _run_new_episode_check_logic, check_for_new_anime
 
 from opentelemetry import trace
 from opentelemetry.sdk.resources import Resource
@@ -22,21 +22,22 @@ from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExport
 
 from opentelemetry.instrumentation.asyncio import AsyncioInstrumentor
 
-# Configure tracer provider
-resource = Resource.create({"service.name": "discord-bot"})
-provider = TracerProvider(resource=resource)
-exporter = OTLPSpanExporter(
-    endpoint="tempo:4317",
-    insecure=True
-)  # sends to Grafana / Tempo
-processor = BatchSpanProcessor(exporter)
-provider.add_span_processor(processor)
-trace.set_tracer_provider(provider)
+if not config.debug:
+    # Configure tracer provider
+    resource = Resource.create({"service.name": "discord-bot"})
+    provider = TracerProvider(resource=resource)
+    exporter = OTLPSpanExporter(
+        endpoint="tempo:4317",
+        insecure=True
+    )  # sends to Grafana / Tempo
+    processor = BatchSpanProcessor(exporter)
+    provider.add_span_processor(processor)
+    trace.set_tracer_provider(provider)
 
-# Instrument asyncio (important for Discord.py)
-AsyncioInstrumentor().instrument()
+    # Instrument asyncio (important for Discord.py)
+    AsyncioInstrumentor().instrument()
 
-tracer = trace.get_tracer(__name__)
+    tracer = trace.get_tracer(__name__)
 
 # Set up the bot with the required intents and command prefix
 intents = discord.Intents.all()
@@ -56,7 +57,7 @@ async def on_ready():
     if not config.debug:
         print('tasks running.')
         check_for_new_anime.start(bot)
-        check_for_new_episodes.start(bot)
+        _run_new_episode_check_logic.start(bot)
 
 #region roullete
 
