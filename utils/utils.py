@@ -28,9 +28,10 @@ def load_json_data(file_path):
         with open(file_path, 'r', encoding='utf-8') as file:
             try:
                 # Try loading JSON data
-                return json.load(file)  
+                return json.load(file)
             # Handle case where the file is empty or invalid
-            except json.JSONDecodeError:  
+            except json.JSONDecodeError:
+                botLogger.warning("json corruption detected: %s -> returning empty list", file_path)
                 return [] # Return an empty list if the file is invalid or empty
     else:
         return [] # Return an empty list if the file does not exist
@@ -128,7 +129,16 @@ async def dropdown_interactions(interaction: discord.Interaction, list, initial_
 # Fetch the RSS feed and parse it
 @trace_function
 def fetch_rss_feed():
-    feed = feedparser.parse(RSS_URL)
+    try:
+        feed = feedparser.parse(RSS_URL)
+    except Exception as e:
+        botLogger.error("rss fetch failed: %s -> %s", RSS_URL, e)
+        return []
+    if getattr(feed, "bozo", False) and feed.bozo:
+        botLogger.error("rss fetch failed: %s -> %s", RSS_URL, feed.bozo_exception)
+        return []
+    if not feed.entries:
+        botLogger.warning("rss fetch returned no entries: %s", RSS_URL)
     return [
         {
             "title": entry.title,
@@ -154,33 +164,41 @@ def scrape_mal(user, status):
     chrome_options.add_argument("--disable-gpu")  # For systems without GPU support
     chrome_options.add_argument("--no-sandbox")
 
-    # Start the WebDriver
-    driver = webdriver.Chrome(options=chrome_options)
+    driver = None
+    try:
+        # Start the WebDriver
+        driver = webdriver.Chrome(options=chrome_options)
 
-    # Open the page
-    url = MAL_LIST_FORMAT.format(user, status)
-    driver.get(url)
+        # Open the page
+        url = MAL_LIST_FORMAT.format(user, status)
+        driver.get(url)
 
-    # Wait for the page to load (important for JavaScript-rendered content)
-    driver.implicitly_wait(10)  # Adjust time if needed
+        # Wait for the page to load (important for JavaScript-rendered content)
+        driver.implicitly_wait(10)  # Adjust time if needed
 
-    # Extract anime titles and additional data
-    anime_rows = driver.find_elements(By.CSS_SELECTOR, "tr.list-table-data")
-    titles = []
-    for row in anime_rows:
-        try:
-            # Extract title
-            title = row.find_element(By.CSS_SELECTOR, "td.title").text.split('\n')[0]
-            titles.append(title)
-        except Exception as e:
-            botLogger.error(f"Error parsing row: {e}")
+        # Extract anime titles and additional data
+        anime_rows = driver.find_elements(By.CSS_SELECTOR, "tr.list-table-data")
+        titles = []
+        for row in anime_rows:
+            try:
+                # Extract title
+                title = row.find_element(By.CSS_SELECTOR, "td.title").text.split('\n')[0]
+                titles.append(title)
+            except Exception as e:
+                botLogger.error(f"Error parsing row: {e}")
 
-    botLogger.info(f'Finish scrape user: {user} with status: {status}')
+        botLogger.info(f'Finish scrape user: {user} with status: {status}')
 
-    # Quit the driver
-    driver.quit()
-
-    return titles
+        return titles
+    except Exception as e:
+        botLogger.error("mal scrape failed for %s (status %s): %s", user, status, e)
+        raise
+    finally:
+        if driver is not None:
+            try:
+                driver.quit()
+            except Exception as e:
+                botLogger.warning("selenium driver.quit failed: %s", e)
 
 
 @trace_function
