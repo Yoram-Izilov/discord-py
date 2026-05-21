@@ -1,6 +1,15 @@
+import contextlib
 import functools
 import inspect
 from opentelemetry import trace
+
+try:
+    import pyroscope
+    _profile_tags = pyroscope.tag_wrapper
+except ImportError:
+    @contextlib.contextmanager
+    def _profile_tags(_tags):
+        yield
 
 tracer = trace.get_tracer("mydiscordbot")
 
@@ -12,7 +21,8 @@ def trace_function(func):
             # Record arguments (be careful with sensitive data, here we just record keys or simple types)
             # For simplicity, we might not record all args to avoid clutter or PII
             try:
-                return await func(*args, **kwargs)
+                with _profile_tags({"span_name": func.__name__}):
+                    return await func(*args, **kwargs)
             except Exception as e:
                 span.record_exception(e)
                 raise e
@@ -22,7 +32,8 @@ def trace_function(func):
         with tracer.start_as_current_span(func.__name__) as span:
             span.set_attribute("function.name", func.__name__)
             try:
-                return func(*args, **kwargs)
+                with _profile_tags({"span_name": func.__name__}):
+                    return func(*args, **kwargs)
             except Exception as e:
                 span.record_exception(e)
                 raise e

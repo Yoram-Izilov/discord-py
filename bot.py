@@ -42,6 +42,18 @@ if not config.debug:
 
     tracer = trace.get_tracer(__name__)
 
+    # Continuous CPU profiling -> Pyroscope
+    import pyroscope
+    pyroscope.configure(
+        application_name="mydiscordbot",
+        server_address="http://pyroscope:4040",
+        sample_rate=100,
+        oncpu=True,
+        gil_only=True,
+        enable_logging=False,
+        tags={"service_name": "mydiscordbot"},
+    )
+
 # Set up the bot with the required intents and command prefix
 intents = discord.Intents.all()
 intents.message_content = True  # Required for reading messages
