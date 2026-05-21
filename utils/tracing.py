@@ -2,7 +2,7 @@ import functools
 import inspect
 from opentelemetry import trace
 
-tracer = trace.get_tracer("discord-bot")
+tracer = trace.get_tracer("mydiscordbot")
 
 def trace_function(func):
     @functools.wraps(func)

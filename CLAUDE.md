@@ -9,8 +9,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 python bot.py
 
 # Docker
-docker build -t discord-bot .
-docker run discord-bot
+docker build -t mydiscordbot .
+docker run mydiscordbot
 ```
 
 There is no test suite. Verify behavior by running the bot directly.
