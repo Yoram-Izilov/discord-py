@@ -1,3 +1,6 @@
+import sys
+import traceback
+
 import discord
 from discord.ext import commands
 from discord import app_commands
@@ -58,6 +61,36 @@ async def on_ready():
         print('tasks running.')
         check_for_new_anime.start(bot)
         _run_new_episode_check_logic.start(bot)
+
+
+@bot.event
+async def on_error(event, *args, **kwargs):
+    exc_type, exc, tb = sys.exc_info()
+    botLogger.error(
+        "unhandled event exception in %s: %s\n%s",
+        event,
+        exc,
+        "".join(traceback.format_exception(exc_type, exc, tb)),
+    )
+
+
+@bot.tree.error
+async def on_app_command_error(interaction: discord.Interaction, error: app_commands.AppCommandError):
+    command_name = interaction.command.name if interaction.command else "<unknown>"
+    botLogger.error(
+        "unhandled slash command exception in /%s: %s\n%s",
+        command_name,
+        error,
+        "".join(traceback.format_exception(type(error), error, error.__traceback__)),
+    )
+    try:
+        msg = "An unexpected error occurred. The incident has been logged."
+        if interaction.response.is_done():
+            await interaction.followup.send(msg, ephemeral=True)
+        else:
+            await interaction.response.send_message(msg, ephemeral=True)
+    except discord.HTTPException:
+        pass
 
 #region roullete
 
