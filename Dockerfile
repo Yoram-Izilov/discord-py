@@ -2,9 +2,14 @@ FROM python:3.12.7-slim
 
 WORKDIR /app
 
-# Install system dependencies and create non-root user in one layer
+# Install system dependencies, deno (yt-dlp JS runtime), and create non-root user
 RUN apt-get update && apt-get install -y \
-    ffmpeg libsndfile1 curl chromium chromium-driver \
+    ffmpeg libsndfile1 curl chromium chromium-driver unzip \
+    && curl -fsSL -o /tmp/deno.zip \
+       https://github.com/denoland/deno/releases/latest/download/deno-x86_64-unknown-linux-gnu.zip \
+    && unzip /tmp/deno.zip -d /usr/local/bin/ \
+    && chmod +x /usr/local/bin/deno \
+    && rm /tmp/deno.zip \
     && rm -rf /var/lib/apt/lists/* \
     && useradd -m botuser
 

@@ -4,6 +4,20 @@ from discord import FFmpegPCMAudio
 from utils.logger import botLogger
 from utils.tracing import trace_function
 
+
+async def _ensure_voice_client(guild, voice_channel):
+    """Return a live voice client connected to voice_channel, reconnecting if the prior one died."""
+    vc = guild.voice_client
+    if vc and vc.is_connected() and vc.channel == voice_channel:
+        return vc
+    if vc:
+        try:
+            await vc.disconnect(force=True)
+        except Exception as e:
+            botLogger.warning("voice disconnect during reconnect failed: %s", e)
+    return await voice_channel.connect()
+
+
 @trace_function
 async def play(interaction: discord.Interaction, query: str, bot):
     """Play audio from a URL or search term"""
@@ -20,11 +34,7 @@ async def play(interaction: discord.Interaction, query: str, bot):
         await interaction.followup.send("❌ You need to join a voice channel first!")
         return
 
-    # Check if bot is already connected to the voice channel
-    if interaction.guild.voice_client:
-        voice_client = interaction.guild.voice_client
-    else:
-        voice_client = await voice_channel.connect()
+    voice_client = await _ensure_voice_client(interaction.guild, voice_channel)
 
     ydl_opts = {
         'format': 'bestaudio/best',
@@ -98,6 +108,9 @@ async def play(interaction: discord.Interaction, query: str, bot):
                 before_options="-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5",
                 options="-vn"
             )
+
+            # Re-verify voice connection after the slow yt-dlp extraction; the WS may have died.
+            voice_client = await _ensure_voice_client(interaction.guild, voice_channel)
 
             def after_playback(error):
                 if error:
