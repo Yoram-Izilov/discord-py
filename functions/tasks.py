@@ -76,6 +76,7 @@ async def check_for_new_episodes(bot):
 
     # Save the updated subscriptions back to the JSON file
     save_json_data(RSS_FILE_PATH, saved_entries)
+    botLogger.info('rss_check_complete')
 
 # The actual task loop
 @tasks.loop(hours=1)
@@ -113,6 +114,8 @@ async def check_for_new_anime(bot):
             save_json_data(RSS_FILE_PATH, json_data)
 
             await channel.send('I find a treasure: ' + selected_entry['series'] +' ,I added this to the RSS for you ;)')
+
+    botLogger.info('anime_check_complete')
 
 @trace_function
 def fuzz_similarity(str1, str2):
