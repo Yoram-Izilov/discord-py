@@ -129,7 +129,16 @@ async def dropdown_interactions(interaction: discord.Interaction, list, initial_
 # Fetch the RSS feed and parse it
 @trace_function
 def fetch_rss_feed():
-    feed = feedparser.parse(RSS_URL)
+    try:
+        feed = feedparser.parse(RSS_URL)
+    except Exception as e:
+        botLogger.error("rss fetch failed: %s -> %s", RSS_URL, e)
+        return []
+    if getattr(feed, "bozo", False) and feed.bozo:
+        botLogger.error("rss fetch failed: %s -> %s", RSS_URL, feed.bozo_exception)
+        return []
+    if not feed.entries:
+        botLogger.warning("rss fetch returned no entries: %s", RSS_URL)
     return [
         {
             "title": entry.title,
