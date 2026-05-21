@@ -28,9 +28,10 @@ def load_json_data(file_path):
         with open(file_path, 'r', encoding='utf-8') as file:
             try:
                 # Try loading JSON data
-                return json.load(file)  
+                return json.load(file)
             # Handle case where the file is empty or invalid
-            except json.JSONDecodeError:  
+            except json.JSONDecodeError:
+                botLogger.warning("json corruption detected: %s -> returning empty list", file_path)
                 return [] # Return an empty list if the file is invalid or empty
     else:
         return [] # Return an empty list if the file does not exist
