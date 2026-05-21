@@ -27,7 +27,7 @@ from opentelemetry.instrumentation.asyncio import AsyncioInstrumentor
 
 if not config.debug:
     # Configure tracer provider
-    resource = Resource.create({"service.name": "discord-bot"})
+    resource = Resource.create({"service.name": "mydiscordbot"})
     provider = TracerProvider(resource=resource)
     exporter = OTLPSpanExporter(
         endpoint="tempo:4317",
