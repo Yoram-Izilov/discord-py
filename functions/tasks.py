@@ -19,11 +19,15 @@ async def announce_new_episode(title, magnet_link, subs, bot):
     # Insert magnet link into API (if required)
     apiUrl          = "https://tormag.ezpz.work/api/api.php?action=insertMagnets"
     data            = { "magnets": [magnet_link] }
-    resp            = requests.post(apiUrl, json=data)
-    responseJson    = json.loads(resp.text)
+    responseJson    = None
+    try:
+        resp            = requests.post(apiUrl, json=data, timeout=10)
+        responseJson    = json.loads(resp.text)
+    except (requests.RequestException, ValueError) as e:
+        botLogger.error("tormag conversion failed: %s", e)
 
     # Check if the response contains the magnet entries
-    if "magnetEntries" in responseJson and responseJson["magnetEntries"]:
+    if responseJson and "magnetEntries" in responseJson and responseJson["magnetEntries"]:
         magnet_url = responseJson["magnetEntries"][0]  # Get the first magnet URL
         # Format the title as the clickable text and mention all subscribers
         formatted_message = f"New Episode Available: [{title}]({magnet_url})\n"
@@ -34,7 +38,8 @@ async def announce_new_episode(title, magnet_link, subs, bot):
         await channel.send(formatted_message)
     else:
         # If no magnet URL is available or URL limit reached, log the error
-        formatted_message = (f"Error for {title}: {responseJson.get('message', 'No message in response')} \nhere is the magnet instead :D : \n{magnet_link}")
+        message = (responseJson or {}).get('message', 'tormag unreachable')
+        formatted_message = (f"Error for {title}: {message} \nhere is the magnet instead :D : \n{magnet_link}")
         await channel.send(formatted_message)
     botLogger.info('finished announcing new episode')
 
