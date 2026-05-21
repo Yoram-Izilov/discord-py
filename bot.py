@@ -42,14 +42,16 @@ if not config.debug:
 
     tracer = trace.get_tracer(__name__)
 
-    # Continuous CPU profiling -> Pyroscope
+    # Continuous wall-clock profiling across all threads -> Pyroscope.
+    # oncpu=False samples blocking I/O too (Discord WS, HTTP, Selenium);
+    # gil_only=False includes native threads (ffmpeg, chromium driver).
     import pyroscope
     pyroscope.configure(
         application_name="mydiscordbot",
         server_address="http://pyroscope:4040",
         sample_rate=100,
-        oncpu=True,
-        gil_only=True,
+        oncpu=False,
+        gil_only=False,
         enable_logging=False,
         tags={"service_name": "mydiscordbot"},
     )
