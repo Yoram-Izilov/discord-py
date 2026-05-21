@@ -1,24 +1,23 @@
-# Use the Python slim image
-FROM python:3.12-slim
+FROM python:3.12.7-slim
 
 WORKDIR /app
 
-# Copy the application code
-COPY . .
-
-# Create the data folder
-RUN mkdir -p /app/data
-
-# Install system dependencies (including Chrome)
+# Install system dependencies and create non-root user in one layer
 RUN apt-get update && apt-get install -y \
     ffmpeg libsndfile1 curl chromium chromium-driver \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
+    && useradd -m botuser
 
-# Set environment variable for Chrome
-ENV PATH="/usr/bin:$PATH"
-
-# Install Python dependencies
+# Install Python dependencies (cached unless requirements.txt changes)
+COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Command to run your application
+# Copy application code
+COPY . .
+
+# Ensure data dir exists and is owned by the non-root user
+RUN mkdir -p /app/data && chown -R botuser:botuser /app
+
+USER botuser
+
 CMD ["python", "bot.py"]
