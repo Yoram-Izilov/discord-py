@@ -164,33 +164,41 @@ def scrape_mal(user, status):
     chrome_options.add_argument("--disable-gpu")  # For systems without GPU support
     chrome_options.add_argument("--no-sandbox")
 
-    # Start the WebDriver
-    driver = webdriver.Chrome(options=chrome_options)
+    driver = None
+    try:
+        # Start the WebDriver
+        driver = webdriver.Chrome(options=chrome_options)
 
-    # Open the page
-    url = MAL_LIST_FORMAT.format(user, status)
-    driver.get(url)
+        # Open the page
+        url = MAL_LIST_FORMAT.format(user, status)
+        driver.get(url)
 
-    # Wait for the page to load (important for JavaScript-rendered content)
-    driver.implicitly_wait(10)  # Adjust time if needed
+        # Wait for the page to load (important for JavaScript-rendered content)
+        driver.implicitly_wait(10)  # Adjust time if needed
 
-    # Extract anime titles and additional data
-    anime_rows = driver.find_elements(By.CSS_SELECTOR, "tr.list-table-data")
-    titles = []
-    for row in anime_rows:
-        try:
-            # Extract title
-            title = row.find_element(By.CSS_SELECTOR, "td.title").text.split('\n')[0]
-            titles.append(title)
-        except Exception as e:
-            botLogger.error(f"Error parsing row: {e}")
+        # Extract anime titles and additional data
+        anime_rows = driver.find_elements(By.CSS_SELECTOR, "tr.list-table-data")
+        titles = []
+        for row in anime_rows:
+            try:
+                # Extract title
+                title = row.find_element(By.CSS_SELECTOR, "td.title").text.split('\n')[0]
+                titles.append(title)
+            except Exception as e:
+                botLogger.error(f"Error parsing row: {e}")
 
-    botLogger.info(f'Finish scrape user: {user} with status: {status}')
+        botLogger.info(f'Finish scrape user: {user} with status: {status}')
 
-    # Quit the driver
-    driver.quit()
-
-    return titles
+        return titles
+    except Exception as e:
+        botLogger.error("mal scrape failed for %s (status %s): %s", user, status, e)
+        raise
+    finally:
+        if driver is not None:
+            try:
+                driver.quit()
+            except Exception as e:
+                botLogger.warning("selenium driver.quit failed: %s", e)
 
 
 @trace_function
