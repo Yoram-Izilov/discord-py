@@ -18,3 +18,4 @@ opentelemetry-instrumentation-asyncio
 opentelemetry-exporter-otlp~=1.38.0
 opentelemetry-instrumentation-discordpy~=0.1.9
 python-Levenshtein~=0.27.3
+pyroscope-io~=0.8.8
