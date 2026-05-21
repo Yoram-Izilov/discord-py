@@ -1,6 +1,7 @@
 import yt_dlp
 import discord
 from discord import FFmpegPCMAudio
+from utils.logger import botLogger
 from utils.tracing import trace_function
 
 @trace_function
@@ -38,11 +39,11 @@ async def play(interaction: discord.Interaction, query: str, bot):
             
             if is_url:
                 # Direct URL playback
-                print(f"Playing from URL: {query}")
+                botLogger.info("playing from URL: %s", query)
                 info = ydl.extract_info(query, download=False)
             else:
                 # Search for the query on YouTube
-                print(f"Searching for: {query}")
+                botLogger.info("searching for: %s", query)
                 search_results = ydl.extract_info(f"ytsearch:{query}", download=False)
                 
                 if not search_results or 'entries' not in search_results or len(search_results['entries']) == 0:
@@ -59,7 +60,7 @@ async def play(interaction: discord.Interaction, query: str, bot):
                 
                 # Build YouTube URL from video ID
                 video_url = f"https://www.youtube.com/watch?v={video_id}"
-                print(f"Found video, extracting: {video_url}")
+                botLogger.info("found video, extracting: %s", video_url)
                 
                 # Extract full info from the actual video
                 info = ydl.extract_info(video_url, download=False)
@@ -86,7 +87,7 @@ async def play(interaction: discord.Interaction, query: str, bot):
             else:
                 audio_url = None
             
-            print(f"Audio URL: {audio_url}")
+            botLogger.info("audio URL: %s", audio_url)
             
             if not audio_url:
                 await interaction.followup.send("❌ Could not extract audio URL.")
@@ -100,7 +101,7 @@ async def play(interaction: discord.Interaction, query: str, bot):
 
             def after_playback(error):
                 if error:
-                    print(f"Error during playback: {error}")
+                    botLogger.error("ffmpeg playback failed: %s", error)
                 # Disconnect after playback finishes
                 import asyncio
                 asyncio.run_coroutine_threadsafe(
@@ -113,9 +114,7 @@ async def play(interaction: discord.Interaction, query: str, bot):
             await interaction.followup.send(f"🎵 Now playing: **{title}**")
 
     except Exception as e:
-        print(f"Play error: {type(e).__name__}: {e}")
-        import traceback
-        traceback.print_exc()
+        botLogger.error("yt-dlp extraction failed for query %r: %s", query, e, exc_info=True)
         await interaction.followup.send(f"❌ An error occurred: {str(e)}")
 
 @trace_function
