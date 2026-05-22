@@ -16,6 +16,7 @@ services:
 
   bot:
     build: .
+    container_name: mydiscordbot
     restart: unless-stopped
     depends_on:
       db:
@@ -25,7 +26,16 @@ services:
     env_file:
       - .env
     volumes:
-      - ./data:/app/data  # keep until all flat files are migrated to PostgreSQL
+      - ${DISCORD_DATA_PATH:-./data}:/app/data
+      - ${DISCORD_DATA_PATH:-./config}/config.json:/app/config/config.json
+    networks:
+      - default
+      - monitoring
+
+networks:
+  monitoring:
+    external: true
+    name: monitoring_monitoring
 
 volumes:
   postgres_data:
