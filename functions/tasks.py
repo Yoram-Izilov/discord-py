@@ -82,7 +82,7 @@ async def _run_new_episode_check_logic(bot):
 @trace_function
 async def check_for_new_anime(bot):
     channel = bot.get_channel(BOT_CHANNEL_ID)
-    update_anime_list_by_status(Statuses.CURRENTLY_WATCHING.value)
+    await update_anime_list_by_status(Statuses.CURRENTLY_WATCHING.value)
 
     rss_data = fetch_rss_feed()
     existing_series = await rss_get_series_list()

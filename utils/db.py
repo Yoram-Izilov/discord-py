@@ -65,6 +65,21 @@ async def ensure_schema() -> None:
                 PRIMARY KEY (feed_id, user_id)
             )
         """)
+        await conn.execute("""
+            CREATE TABLE IF NOT EXISTS mal_profiles (
+                id         SERIAL      PRIMARY KEY,
+                username   TEXT        NOT NULL UNIQUE,
+                created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+            )
+        """)
+        await conn.execute("""
+            CREATE TABLE IF NOT EXISTS anime_list (
+                id         SERIAL      PRIMARY KEY,
+                status     INTEGER     NOT NULL,
+                title      TEXT        NOT NULL,
+                UNIQUE (status, title)
+            )
+        """)
     botLogger.info("schema ensured")
 
 
@@ -276,3 +291,55 @@ async def rss_update_episode(series: str, pub_date: str, title: str, link: str, 
             """,
             pub_date, title, link, size, series,
         )
+
+
+# ---------------------------------------------------------------------------
+# MAL profile helpers
+# ---------------------------------------------------------------------------
+
+@trace_function
+async def mal_get_users() -> list[str]:
+    async with get_pool().acquire() as conn:
+        rows = await conn.fetch("SELECT username FROM mal_profiles ORDER BY created_at ASC")
+    return [row["username"] for row in rows]
+
+
+@trace_function
+async def mal_add_user(username: str) -> None:
+    async with get_pool().acquire() as conn:
+        await conn.execute(
+            "INSERT INTO mal_profiles (username) VALUES ($1) ON CONFLICT (username) DO NOTHING",
+            username,
+        )
+
+
+@trace_function
+async def mal_remove_user(username: str) -> None:
+    async with get_pool().acquire() as conn:
+        await conn.execute("DELETE FROM mal_profiles WHERE username = $1", username)
+
+
+# ---------------------------------------------------------------------------
+# Anime list helpers
+# ---------------------------------------------------------------------------
+
+@trace_function
+async def anime_list_get(status: int) -> list[str]:
+    async with get_pool().acquire() as conn:
+        rows = await conn.fetch(
+            "SELECT title FROM anime_list WHERE status = $1 ORDER BY id ASC", status
+        )
+    return [row["title"] for row in rows]
+
+
+@trace_function
+async def anime_list_replace(status: int, titles: list[str]) -> None:
+    """Atomically replace all titles for a given status."""
+    async with get_pool().acquire() as conn:
+        async with conn.transaction():
+            await conn.execute("DELETE FROM anime_list WHERE status = $1", status)
+            if titles:
+                await conn.executemany(
+                    "INSERT INTO anime_list (status, title) VALUES ($1, $2) ON CONFLICT DO NOTHING",
+                    [(status, t) for t in titles],
+                )

@@ -3,6 +3,7 @@ from functions.roulettes import roulette
 from functions.roulettes import roulette
 from utils.utils import *
 from utils.tracing import trace_function
+from utils.db import mal_get_users, mal_add_user, mal_remove_user, anime_list_get
 
 
 @trace_function
@@ -31,29 +32,23 @@ async def anime_list_menu(bot, interaction: discord.Interaction, action, user: s
 
 @trace_function
 async def next_anime(interaction: discord.Interaction):
-    file_address = MAL_STATUSES_FORMAT.format(Statuses.PLAN_TO_WATCH.value)
-
-    anime_list = load_text_data(file_address)
+    anime_list = await anime_list_get(Statuses.PLAN_TO_WATCH.value)
     anime_roulete_string = ",".join(anime_list)
     await roulette(interaction, anime_roulete_string)
 
 @trace_function
 async def add_users_mal(interaction, user: str):
-    lines = load_text_data(MAL_PROFILE_PATH)
-    lines.append(user.strip())
-    save_text_data(MAL_PROFILE_PATH, lines)
+    await mal_add_user(user.strip())
     await interaction.response.send_message(f"Added the new user: {user.strip()}")
 
 @trace_function
 async def view_users_mal(interaction):
-    lines = load_text_data(MAL_PROFILE_PATH)
+    lines = await mal_get_users()
     await interaction.response.send_message(f"Users: {', '.join(lines)}")
 
 @trace_function
 async def remove_users_mal(interaction, user: str):
-    lines = load_text_data(MAL_PROFILE_PATH)
-    lines.remove(user.strip())
-    save_text_data(MAL_PROFILE_PATH, lines)
+    await mal_remove_user(user.strip())
     await interaction.response.send_message(f"Removed the new option set: {user.strip()}")
 
 @trace_function
@@ -61,20 +56,15 @@ async def update_anime_list(bot, interaction, status):
     await interaction.response.send_message(f"Will be updated.")
 
     channel = bot.get_channel(BOT_CHANNEL_ID)
-    name    = update_anime_list_by_status(status)
+    name    = await update_anime_list_by_status(status)
 
     await channel.send(f"Finish to update {name} list.")
 
 
 @trace_function
 async def view_anime_list(interaction, status):
-    file_address = MAL_STATUSES_FORMAT.format(status)
-
-    anime_list = load_text_data(file_address)
+    anime_list = await anime_list_get(status)
     if len(anime_list) > 0:
         await interaction.response.send_message("\n".join(anime_list)[:MAX_LETTERS])
     else:
         await interaction.response.send_message("No anime.")
-
-
-
