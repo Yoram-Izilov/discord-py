@@ -3,6 +3,7 @@ import discord
 from discord import FFmpegPCMAudio
 from utils.logger import botLogger
 from utils.tracing import trace_function
+from utils.utils import make_embed
 
 
 async def _ensure_voice_client(guild, voice_channel):
@@ -25,13 +26,17 @@ async def play(interaction: discord.Interaction, query: str, bot):
 
     # Validate input
     if not query or query is None:
-        await interaction.followup.send("❌ Please provide a valid URL or search query.")
+        await interaction.followup.send(
+            embed=make_embed("❌ Please provide a valid URL or search query.", kind="error")
+        )
         return
 
     # Check if the user is in a voice channel
     voice_channel = interaction.user.voice.channel if interaction.user.voice else None
     if not voice_channel:
-        await interaction.followup.send("❌ You need to join a voice channel first!")
+        await interaction.followup.send(
+            embed=make_embed("❌ You need to join a voice channel first!", kind="error")
+        )
         return
 
     voice_client = await _ensure_voice_client(interaction.guild, voice_channel)
@@ -57,15 +62,19 @@ async def play(interaction: discord.Interaction, query: str, bot):
                 search_results = ydl.extract_info(f"ytsearch:{query}", download=False)
                 
                 if not search_results or 'entries' not in search_results or len(search_results['entries']) == 0:
-                    await interaction.followup.send("❌ No results found for that query.")
+                    await interaction.followup.send(
+                        embed=make_embed("❌ No results found for that query.", kind="error")
+                    )
                     return
-                
+
                 # Get the first video from search results
                 video_info = search_results['entries'][0]
                 video_id = video_info.get('id')
-                
+
                 if not video_id:
-                    await interaction.followup.send("❌ Could not extract video ID from search result.")
+                    await interaction.followup.send(
+                        embed=make_embed("❌ Could not extract video ID from search result.", kind="error")
+                    )
                     return
                 
                 # Build YouTube URL from video ID
@@ -76,7 +85,9 @@ async def play(interaction: discord.Interaction, query: str, bot):
                 info = ydl.extract_info(video_url, download=False)
             
             if not info:
-                await interaction.followup.send("❌ Could not retrieve video information.")
+                await interaction.followup.send(
+                    embed=make_embed("❌ Could not retrieve video information.", kind="error")
+                )
                 return
             
             # Try to get URL directly, or construct it from format data
@@ -100,7 +111,9 @@ async def play(interaction: discord.Interaction, query: str, bot):
             botLogger.info("audio URL: %s", audio_url)
             
             if not audio_url:
-                await interaction.followup.send("❌ Could not extract audio URL.")
+                await interaction.followup.send(
+                    embed=make_embed("❌ Could not extract audio URL.", kind="error")
+                )
                 return
 
             source = FFmpegPCMAudio(
@@ -124,11 +137,15 @@ async def play(interaction: discord.Interaction, query: str, bot):
 
             voice_client.play(source, after=after_playback)
             title = info.get('title', 'Unknown')
-            await interaction.followup.send(f"🎵 Now playing: **{title}**")
+            await interaction.followup.send(
+                embed=make_embed(f"🎵 Now playing: **{title}**", kind="success")
+            )
 
     except Exception as e:
         botLogger.error("yt-dlp extraction failed for query %r: %s", query, e, exc_info=True)
-        await interaction.followup.send(f"❌ An error occurred: {str(e)}")
+        await interaction.followup.send(
+            embed=make_embed(f"❌ An error occurred: {str(e)}", kind="error")
+        )
 
 @trace_function
 async def leave(interaction: discord.Interaction):
@@ -141,6 +158,10 @@ async def leave(interaction: discord.Interaction):
             interaction.guild.voice_client.stop()
         
         await interaction.guild.voice_client.disconnect()
-        await interaction.followup.send("👋 Disconnected from the voice channel.")
+        await interaction.followup.send(
+            embed=make_embed("👋 Disconnected from the voice channel.", kind="success")
+        )
     else:
-        await interaction.followup.send("❌ I'm not connected to any voice channel.")
+        await interaction.followup.send(
+            embed=make_embed("❌ I'm not connected to any voice channel.", kind="error")
+        )

@@ -3,6 +3,7 @@ import aiohttp
 import discord
 from bs4 import BeautifulSoup
 from utils.tracing import trace_function
+from utils.utils import make_embed
 
 # nyaa search function - displays top 5 results from nyaa.si based on user query.
 @trace_function
@@ -18,22 +19,30 @@ async def search(interaction: discord.Interaction, query: str):
         async with aiohttp.ClientSession() as session:
             async with session.get(search_url, timeout=aiohttp.ClientTimeout(total=10)) as response:
                 if response.status != 200:
-                    await interaction.followup.send(f"❌ Failed to fetch results (HTTP {response.status})")
+                    await interaction.followup.send(
+                        embed=make_embed(f"❌ Failed to fetch results (HTTP {response.status})", kind="error")
+                    )
                     return
-                
+
                 html = await response.text()
     except asyncio.TimeoutError:
-        await interaction.followup.send("❌ Request timed out")
+        await interaction.followup.send(
+            embed=make_embed("❌ Request timed out", kind="error")
+        )
         return
     except Exception as e:
-        await interaction.followup.send(f"❌ Error fetching results: {str(e)}")
+        await interaction.followup.send(
+            embed=make_embed(f"❌ Error fetching results: {str(e)}", kind="error")
+        )
         return
             
     soup = BeautifulSoup(html, 'html.parser')
     rows = soup.select('table tr')[1:11]  # Skip header row, get next 10
     
     if not rows:
-        await interaction.followup.send("❌ No results found")
+        await interaction.followup.send(
+            embed=make_embed("❌ No results found", kind="error")
+        )
         return
         
     embed = discord.Embed(title=f"Nyaa Search Results for: {query}", 
@@ -88,7 +97,9 @@ async def search(interaction: discord.Interaction, query: str):
             continue
     
     if result_count == 0:
-        await interaction.followup.send("❌ No valid results found")
+        await interaction.followup.send(
+            embed=make_embed("❌ No valid results found", kind="error")
+        )
         return
     
     await interaction.followup.send(embed=embed)

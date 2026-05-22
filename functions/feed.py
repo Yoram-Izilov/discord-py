@@ -21,7 +21,9 @@ async def add_rss(interaction: discord.Interaction, search):
     ]
 
     if not filtered_series:
-        return await interaction.response.send_message("If you can't spell, DON'T :)")
+        return await interaction.response.send_message(
+            embed=make_embed("If you can't spell, DON'T :)", kind="error")
+        )
 
     picked_option = await dropdown_interactions(
         interaction, filtered_series, "Select a series to add to your feed (only one at a time):"
@@ -33,9 +35,13 @@ async def add_rss(interaction: discord.Interaction, search):
             user = interaction.user
             await rss_add_feed(selected_entry, user_id=user.id)
             await announce_new_episode(selected_entry["title"], selected_entry["link"], [str(user.id)], interaction.client)
-            return await interaction.followup.send(f'Series "{picked_option}" has been added to the feed!')
+            return await interaction.followup.send(
+                embed=make_embed(f'Series "{picked_option}" has been added to the feed!', kind="success")
+            )
         else:
-            return await interaction.followup.send(f'Could not find data for the series "{picked_option}".')
+            return await interaction.followup.send(
+                embed=make_embed(f'Could not find data for the series "{picked_option}".', kind="error")
+            )
 
 
 @trace_function
@@ -44,28 +50,34 @@ async def view_rss(interaction: discord.Interaction, search):
     all_series = await rss_get_series_list()
 
     if not all_series:
-        await interaction.response.send_message("Your RSS feed is empty.")
+        await interaction.response.send_message(
+            embed=make_embed("Your RSS feed is empty.", kind="info")
+        )
         return
 
     subscribed = await rss_get_subscribed_series(user.id)
     subscribed_set = set(subscribed)
     not_subscribed = [s for s in all_series if s not in subscribed_set]
 
-    message = "**Your RSS Feed:**\n```\n"
+    message = "```\n"
     if subscribed:
         message += "SUBSCRIBED:\n" + "\n".join(subscribed)
     if not_subscribed:
         message += ("\n\nNOT SUBSCRIBED:\n" if subscribed else "NOT SUBSCRIBED:\n")
         message += "\n".join(not_subscribed)
     message += "\n```"
-    await interaction.response.send_message(message)
+    await interaction.response.send_message(
+        embed=make_embed(message, kind="info", title="Your RSS Feed")
+    )
 
 
 @trace_function
 async def remove_rss(interaction: discord.Interaction, search):
     series_list = await rss_get_series_list()
     if not series_list:
-        return await interaction.response.send_message("No series found to remove.", ephemeral=True)
+        return await interaction.response.send_message(
+            embed=make_embed("No series found to remove.", kind="warning"), ephemeral=True
+        )
 
     picked_option = await dropdown_interactions(
         interaction, series_list, "Select an episode to remove from your feed:"
@@ -73,7 +85,9 @@ async def remove_rss(interaction: discord.Interaction, search):
 
     if picked_option:
         await rss_delete_series(picked_option)
-        await interaction.followup.send(f"The series **{picked_option}** has been removed successfully.")
+        await interaction.followup.send(
+            embed=make_embed(f"The series **{picked_option}** has been removed successfully.", kind="success")
+        )
 
 
 @trace_function
@@ -82,12 +96,16 @@ async def sub_to_rss(interaction: discord.Interaction, search):
     all_series = await rss_get_series_list()
 
     if not all_series:
-        return await interaction.response.send_message("No series found to subscribe to :<", ephemeral=True)
+        return await interaction.response.send_message(
+            embed=make_embed("No series found to subscribe to :<", kind="warning"), ephemeral=True
+        )
 
     available_series = await rss_get_unsubscribed_series(user.id)
 
     if not available_series:
-        return await interaction.response.send_message("You are already subscribed to all series!", ephemeral=True)
+        return await interaction.response.send_message(
+            embed=make_embed("You are already subscribed to all series!", kind="info"), ephemeral=True
+        )
 
     picked_option = await dropdown_interactions(
         interaction, available_series, "Select a series to subscribe to:"
@@ -97,9 +115,14 @@ async def sub_to_rss(interaction: discord.Interaction, search):
         subscribed = await rss_subscribe(picked_option, user.id)
         if subscribed:
             return await interaction.followup.send(
-                f"Successfully subscribed {user.mention} to {picked_option} RSS feed!"
+                embed=make_embed(
+                    f"Successfully subscribed {user.mention} to {picked_option} RSS feed!",
+                    kind="success",
+                )
             )
-    return await interaction.followup.send(f"Already subscribed to {picked_option} RSS feed!")
+    return await interaction.followup.send(
+        embed=make_embed(f"Already subscribed to {picked_option} RSS feed!", kind="info")
+    )
 
 
 @trace_function
@@ -109,7 +132,7 @@ async def unsub_from_rss(interaction: discord.Interaction, search):
 
     if not subscribed_series:
         return await interaction.response.send_message(
-            "You are not subscribed to any series!", ephemeral=True
+            embed=make_embed("You are not subscribed to any series!", kind="info"), ephemeral=True
         )
 
     picked_option = await dropdown_interactions(
@@ -120,9 +143,14 @@ async def unsub_from_rss(interaction: discord.Interaction, search):
         unsubbed = await rss_unsubscribe(picked_option, user.id)
         if unsubbed:
             return await interaction.followup.send(
-                f"Successfully removed {user.mention} from {picked_option} RSS feed :( but why?"
+                embed=make_embed(
+                    f"Successfully removed {user.mention} from {picked_option} RSS feed :( but why?",
+                    kind="success",
+                )
             )
-    return await interaction.followup.send(f"Already unsubscribed from {picked_option}")
+    return await interaction.followup.send(
+        embed=make_embed(f"Already unsubscribed from {picked_option}", kind="info")
+    )
 
 
 @trace_function
@@ -130,12 +158,14 @@ async def all_rss_subscribe(interaction: discord.Interaction, search):
     feeds = await rss_get_all_with_subs()
 
     if not feeds:
-        await interaction.response.send_message("No RSS data found.")
+        await interaction.response.send_message(
+            embed=make_embed("No RSS data found.", kind="info")
+        )
         return
 
     await interaction.response.defer()
 
-    message = "**All RSS Subscriptions:**\n"
+    message = ""
     has_subs = False
 
     for entry in feeds:
@@ -156,26 +186,33 @@ async def all_rss_subscribe(interaction: discord.Interaction, search):
                     message += f"- Unknown User ({sub_id})\n"
 
     if not has_subs:
-        await interaction.followup.send("No subscriptions found.")
+        await interaction.followup.send(
+            embed=make_embed("No subscriptions found.", kind="info")
+        )
         return
 
-    if len(message) > 2000:
+    if len(message) > 4096:
         with io.BytesIO() as file_buffer:
             file_buffer.write(message.encode('utf-8'))
             file_buffer.seek(0)
             await interaction.followup.send(
-                "The list is too long, here is a file:",
+                embed=make_embed("The list is too long, here is a file:", kind="info"),
                 file=discord.File(file_buffer, "subscriptions.txt"),
             )
     else:
-        await interaction.followup.send(message)
+        await interaction.followup.send(
+            embed=make_embed(message, kind="info", title="All RSS Subscriptions")
+        )
 
 
 @trace_function
 async def check_rss_feed_command(interaction: discord.Interaction):
     await interaction.response.defer(ephemeral=True)
     await _run_new_episode_check_logic(interaction.client)
-    await interaction.followup.send("RSS feed check initiated and completed!", ephemeral=True)
+    await interaction.followup.send(
+        embed=make_embed("RSS feed check initiated and completed!", kind="success"),
+        ephemeral=True,
+    )
 
 
 @trace_function
@@ -197,4 +234,6 @@ async def rss_menu(interaction: discord.Interaction, action, search):
         else:
             await action_func(interaction, search)
     else:
-        await interaction.response.send_message("Invalid option selected.", ephemeral=True)
+        await interaction.response.send_message(
+            embed=make_embed("Invalid option selected.", kind="error"), ephemeral=True
+        )

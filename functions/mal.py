@@ -15,7 +15,9 @@ async def mal_menu(interaction: discord.Interaction, action, user: str = None):
     elif action.value == "remove_user":
         await remove_users_mal(interaction, user)
     else:
-        await interaction.response.send_message("Invalid option selected.", ephemeral=True)
+        await interaction.response.send_message(
+            embed=make_embed("Invalid option selected.", kind="error"), ephemeral=True
+        )
 
 @trace_function
 async def anime_list_menu(bot, interaction: discord.Interaction, action, user: str = None):
@@ -28,7 +30,9 @@ async def anime_list_menu(bot, interaction: discord.Interaction, action, user: s
     elif action.value == "view_plantowatch_list":
         await view_anime_list(interaction, Statuses.PLAN_TO_WATCH.value)
     else:
-        await interaction.response.send_message("Invalid option selected.", ephemeral=True)
+        await interaction.response.send_message(
+            embed=make_embed("Invalid option selected.", kind="error"), ephemeral=True
+        )
 
 @trace_function
 async def next_anime(interaction: discord.Interaction):
@@ -39,32 +43,46 @@ async def next_anime(interaction: discord.Interaction):
 @trace_function
 async def add_users_mal(interaction, user: str):
     await mal_add_user(user.strip())
-    await interaction.response.send_message(f"Added the new user: {user.strip()}")
+    await interaction.response.send_message(
+        embed=make_embed(f"Added the new user: {user.strip()}", kind="success")
+    )
 
 @trace_function
 async def view_users_mal(interaction):
     lines = await mal_get_users()
-    await interaction.response.send_message(f"Users: {', '.join(lines)}")
+    await interaction.response.send_message(
+        embed=make_embed(f"Users: {', '.join(lines)}", kind="info")
+    )
 
 @trace_function
 async def remove_users_mal(interaction, user: str):
     await mal_remove_user(user.strip())
-    await interaction.response.send_message(f"Removed the new option set: {user.strip()}")
+    await interaction.response.send_message(
+        embed=make_embed(f"Removed the new option set: {user.strip()}", kind="success")
+    )
 
 @trace_function
 async def update_anime_list(bot, interaction, status):
-    await interaction.response.send_message(f"Will be updated.")
+    await interaction.response.send_message(
+        embed=make_embed("Will be updated.", kind="info")
+    )
 
     channel = bot.get_channel(BOT_CHANNEL_ID)
     name    = await update_anime_list_by_status(status)
 
-    await channel.send(f"Finish to update {name} list.")
+    await channel.send(
+        embed=make_embed(f"Finish to update {name} list.", kind="success")
+    )
 
 
 @trace_function
 async def view_anime_list(interaction, status):
     anime_list = await anime_list_get(status)
     if len(anime_list) > 0:
-        await interaction.response.send_message("\n".join(anime_list)[:MAX_LETTERS])
+        await interaction.response.send_message(
+            embed=make_embed("\n".join(anime_list)[:MAX_LETTERS], kind="info")
+        )
     else:
-        await interaction.response.send_message("No anime.")
+        await interaction.response.send_message(
+            embed=make_embed("No anime.", kind="info")
+        )
