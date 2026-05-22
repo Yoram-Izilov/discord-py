@@ -28,6 +28,22 @@ The bot loads config from `config/config-local.json` if it exists, otherwise fal
 
 Setting `debug: true` disables OpenTelemetry tracing and skips starting the background tasks (`check_for_new_anime` and `_run_new_episode_check_logic`).
 
+## Deployment
+
+Production deploys go through `Jenkinsfile` at the repo root. The pipeline builds the `mydiscordbot` image, stops + removes any running `discordbot` container, prunes dangling images, then runs a fresh container and verifies it's up.
+
+Runtime container settings (from the pipeline — keep these in sync if you change them):
+
+- Image / container name: `mydiscordbot`
+- Network: `monitoring_monitoring` (external Docker network — the bot expects Tempo to be reachable at `tempo:4317` for OTel export)
+- Env: `OTEL_EXPORTER_OTLP_ENDPOINT=tempo:4317`
+- Volumes (host → container):
+  - `/home/izilov/Desktop/discord-files/` → `/app/data/`
+  - `/home/izilov/Desktop/discord-files/config.json` → `/app/config/config.json`
+- Restart policy: `unless-stopped`
+
+If you change the image name, mount paths, network, or OTel endpoint in code or the Dockerfile, update the `Jenkinsfile` in the same commit (`chore(docker): ...`).
+
 ## Architecture
 
 `bot.py` is the entry point. It registers all slash commands and wires them to handler functions in `functions/`. The command implementations do not live in `bot.py` — they are thin wrappers that delegate immediately.
