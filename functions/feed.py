@@ -32,7 +32,7 @@ async def add_rss(interaction: discord.Interaction, search):
         if selected_entry:
             user = interaction.user
             await rss_add_feed(selected_entry, user_id=user.id)
-            await announce_new_episode(selected_entry["title"], selected_entry["link"], [str(user.id)], bot)
+            await announce_new_episode(selected_entry["title"], selected_entry["link"], [str(user.id)], interaction.client)
             return await interaction.followup.send(f'Series "{picked_option}" has been added to the feed!')
         else:
             return await interaction.followup.send(f'Could not find data for the series "{picked_option}".')
