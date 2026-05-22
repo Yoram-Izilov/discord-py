@@ -202,20 +202,18 @@ def scrape_mal(user, status):
 
 
 @trace_function
-def update_anime_list_by_status(status):
-    file_address = MAL_STATUSES_FORMAT.format(status)
+async def update_anime_list_by_status(status):
+    from utils.db import mal_get_users, anime_list_replace
 
-    users = load_text_data(MAL_PROFILE_PATH)
+    users = await mal_get_users()
     titles = []
 
     for user in users:
         titles.extend(scrape_mal(user, status))
 
-    save_text_data(file_address, titles)
+    await anime_list_replace(status, titles)
 
-    name = Statuses(status).name
-
-    return name
+    return Statuses(status).name
 # endregion
 
 # region Roulette
