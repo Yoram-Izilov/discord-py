@@ -23,8 +23,6 @@ services:
         condition: service_healthy
     environment:
       DATABASE_URL: postgresql://botuser:botpassword@db:5432/discordbot
-    env_file:
-      - .env
     volumes:
       - ${DISCORD_DATA_PATH:-./data}:/app/data
       - ${DISCORD_DATA_PATH:-./config}/config.json:/app/config/config.json
