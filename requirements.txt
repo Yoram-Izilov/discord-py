@@ -1,4 +1,5 @@
 discord.py==2.6.4
+asyncpg~=0.30.0
 yt-dlp # Latest version always
 matplotlib==3.10.8
 feedparser~=6.0.11
