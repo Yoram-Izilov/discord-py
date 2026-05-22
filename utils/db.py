@@ -339,7 +339,12 @@ async def anime_list_replace(status: int, titles: list[str]) -> None:
         async with conn.transaction():
             await conn.execute("DELETE FROM anime_list WHERE status = $1", status)
             if titles:
-                await conn.executemany(
-                    "INSERT INTO anime_list (status, title) VALUES ($1, $2) ON CONFLICT DO NOTHING",
-                    [(status, t) for t in titles],
+                await conn.execute(
+                    """
+                    INSERT INTO anime_list (status, title)
+                    SELECT $1, t FROM unnest($2::text[]) AS t
+                    ON CONFLICT DO NOTHING
+                    """,
+                    status,
+                    titles,
                 )

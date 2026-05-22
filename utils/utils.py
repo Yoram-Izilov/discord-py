@@ -209,7 +209,9 @@ async def update_anime_list_by_status(status):
     titles = []
 
     for user in users:
-        titles.extend(scrape_mal(user, status))
+        user_titles = scrape_mal(user, status)
+        botLogger.info("scraped %d titles for %s (status=%s)", len(user_titles), user, status)
+        titles.extend(user_titles)
 
     await anime_list_replace(status, titles)
 
