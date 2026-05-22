@@ -7,24 +7,10 @@ pipeline {
     }
 
     stages {
-        stage('Build Image') {
+        stage('Deploy') {
             steps {
-                echo "Building ${IMAGE_NAME} image..."
-                sh 'docker build -t $IMAGE_NAME .'
-            }
-        }
-
-        stage('Stop Running Containers') {
-            steps {
-                echo "Stopping running discordbot containers..."
-                sh 'docker ps -q --filter "name=discordbot" | xargs -r docker stop || true'
-            }
-        }
-
-        stage('Remove Stopped Containers') {
-            steps {
-                echo "Removing stopped discordbot containers..."
-                sh 'docker ps -aq --filter "name=discordbot" | xargs -r docker rm || true'
+                echo "Deploying with docker-compose..."
+                sh 'docker-compose up --build -d'
             }
         }
 
@@ -39,21 +25,6 @@ pipeline {
                         echo "No dangling images to remove."
                     }
                 }
-            }
-        }
-
-        stage('Run Container') {
-            steps {
-                sh '''
-                    docker run -d \
-                        --network monitoring_monitoring \
-                        -e OTEL_EXPORTER_OTLP_ENDPOINT="tempo:4317" \
-                        -v $DISCORD_DATA_PATH/:/app/data/ \
-                        -v $DISCORD_DATA_PATH/config.json:/app/config/config.json \
-                        --restart unless-stopped \
-                        --name $IMAGE_NAME \
-                        $IMAGE_NAME
-                '''
             }
         }
 

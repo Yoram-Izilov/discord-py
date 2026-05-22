@@ -1,9 +1,10 @@
 from utils.utils import *
 from utils.tracing import trace_function
+from utils.db import roulette_load_all, roulette_add, roulette_update, roulette_remove
 
 @trace_function
 async def roulette(interaction: discord.Interaction, options: str):
-    dict_options    = {}  
+    dict_options    = {}
     # Parse the input options
     for option in options.split(','):
         name, count = process_option(option)
@@ -16,9 +17,9 @@ async def roulette(interaction: discord.Interaction, options: str):
 
     if len(dict_options.keys()) < 1: # not a single valid choice in roulette
         return await interaction.response.send_message("Insert at least one valid option..")
-    
+
     winner = choose_winner(dict_options.items())
-    if len(dict_options.keys()) < 7: 
+    if len(dict_options.keys()) < 7:
         embed, file = chart_and_annouce(dict_options, winner, interaction.user.name)
         await interaction.response.send_message(embed=embed, file=file)
     else:
@@ -39,25 +40,22 @@ def update_options(options, winner):
             updated_auto_roulette.append(f"{name}|{count + 1}")
     return updated_auto_roulette
 
-# choosing one from the user saved roulette 
+# choosing one from the user saved roulette
 @trace_function
 async def auto_roulette(interaction: discord.Interaction):
-    lines = load_text_data(AUTO_ROULETTE_PATH)
+    lines = await roulette_load_all()
     if not lines:
         await interaction.response.send_message("No options are available. Please add some using `/roulette`.")
         return
-    
+
     # Create dropdown menu options
     select_menus = create_select_menus(lines)
     async def select_callback(interaction: discord.Interaction):
         selected_roulette = interaction.data['values'][0]
         winner = await roulette(interaction, selected_roulette)
-        new_roulette = update_options(selected_roulette, winner) 
-
-        if selected_roulette in lines:
-            index = next((i for i, line in enumerate(lines) if line == selected_roulette), None)
-            lines[index] = ",".join(new_roulette)
-            save_text_data(AUTO_ROULETTE_PATH, lines)
+        new_roulette = update_options(selected_roulette, winner)
+        new_line = ",".join(new_roulette)
+        await roulette_update(selected_roulette, new_line)
 
     # Create a view for the select menus
     view = discord.ui.View()
@@ -69,18 +67,16 @@ async def auto_roulette(interaction: discord.Interaction):
 
 @trace_function
 async def remove_auto_roulette(interaction: discord.Interaction):
-    lines = load_text_data(AUTO_ROULETTE_PATH)
+    lines = await roulette_load_all()
     if not lines:
         return await interaction.response.send_message("No options are available. Please add some using `/add_auto_roulette`.")
-    
+
     # Create dropdown menu options
     select_menus = create_select_menus(lines)
     async def select_callback(interaction: discord.Interaction):
         selected_roulette = interaction.data['values'][0]
-        index = next((i for i, line in enumerate(lines) if line == selected_roulette), None)
-        removed_line = lines.pop(index)
-        save_text_data(AUTO_ROULETTE_PATH, lines)
-        return await interaction.response.send_message(f"Removed the option set: `{removed_line}`")
+        await roulette_remove(selected_roulette)
+        return await interaction.response.send_message(f"Removed the option set: `{selected_roulette}`")
 
      # Create a view for the select menus
     view = discord.ui.View()
@@ -92,12 +88,9 @@ async def remove_auto_roulette(interaction: discord.Interaction):
 
 @trace_function
 async def add_auto_roulette(interaction: discord.Interaction, option_line: str):
-    lines = load_text_data(AUTO_ROULETTE_PATH)
-    # Check if the option_line already exists in the file
-    if option_line.strip() in lines:
+    inserted = await roulette_add(option_line.strip())
+    if not inserted:
         return await interaction.response.send_message(f"The option set `{option_line.strip()}` already exists.")
-    lines.append(option_line.strip())
-    save_text_data(AUTO_ROULETTE_PATH, lines)
     return await interaction.response.send_message(f"Added the new option set: `{option_line.strip()}`")
 
 @trace_function

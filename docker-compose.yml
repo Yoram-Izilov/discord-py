@@ -1,0 +1,41 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: botuser
+      POSTGRES_PASSWORD: botpassword
+      POSTGRES_DB: discordbot
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U botuser -d discordbot"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  bot:
+    build: .
+    container_name: mydiscordbot
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://botuser:botpassword@db:5432/discordbot
+    env_file:
+      - .env
+    volumes:
+      - ${DISCORD_DATA_PATH:-./data}:/app/data
+      - ${DISCORD_DATA_PATH:-./config}/config.json:/app/config/config.json
+    networks:
+      - default
+      - monitoring
+
+networks:
+  monitoring:
+    external: true
+    name: monitoring_monitoring
+
+volumes:
+  postgres_data:

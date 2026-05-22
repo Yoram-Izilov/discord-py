@@ -3,6 +3,7 @@
 config/config-local.json
 rss_feed.txt
 data/
+.env
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

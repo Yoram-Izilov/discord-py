@@ -6,6 +6,7 @@ from discord.ext import commands
 from discord import app_commands
 
 from utils.config import config
+from utils.db import init_pool, ensure_schema
 from utils.logger import botLogger
 from utils.tracing import trace_function
 
@@ -66,6 +67,8 @@ bot = commands.Bot(command_prefix='/', intents=intents)
 @bot.event
 @trace_function
 async def on_ready():
+    await init_pool()
+    await ensure_schema()
     print(f"Logged in as {bot.user}")
 
     await bot.tree.sync()  # Syncs the slash commands with Discord
