@@ -9,6 +9,7 @@ from utils.config import config
 from utils.db import init_pool, ensure_schema
 from utils.logger import botLogger
 from utils.tracing import trace_function
+from utils.utils import make_embed
 
 # all discord user functions
 from functions.roulettes import roulette, auto_roulette_menu
@@ -101,11 +102,11 @@ async def on_app_command_error(interaction: discord.Interaction, error: app_comm
         "".join(traceback.format_exception(type(error), error, error.__traceback__)),
     )
     try:
-        msg = "An unexpected error occurred. The incident has been logged."
+        embed = make_embed("An unexpected error occurred. The incident has been logged.", kind="error")
         if interaction.response.is_done():
-            await interaction.followup.send(msg, ephemeral=True)
+            await interaction.followup.send(embed=embed, ephemeral=True)
         else:
-            await interaction.response.send_message(msg, ephemeral=True)
+            await interaction.response.send_message(embed=embed, ephemeral=True)
     except discord.HTTPException:
         pass
 

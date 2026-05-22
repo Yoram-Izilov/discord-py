@@ -30,18 +30,15 @@ async def announce_new_episode(title, magnet_link, subs, bot):
     # Check if the response contains the magnet entries
     if responseJson and "magnetEntries" in responseJson and responseJson["magnetEntries"]:
         magnet_url = responseJson["magnetEntries"][0]  # Get the first magnet URL
-        # Format the title as the clickable text and mention all subscribers
-        formatted_message = f"New Episode Available: [{title}]({magnet_url})\n"
-        # Mention all the users
+        # Mentions live in `content` so they actually ping subscribers; the embed is just the formatted link
         user_mentions = " ".join([f"<@{user_id}>" for user_id in subs])
-        # Add the mentions to the formatted message
-        formatted_message += f"\n{user_mentions}"
-        await channel.send(formatted_message)
+        embed = make_embed(f"New Episode Available: [{title}]({magnet_url})", kind="success")
+        await channel.send(content=user_mentions, embed=embed)
     else:
         # If no magnet URL is available or URL limit reached, log the error
         message = (responseJson or {}).get('message', 'tormag unreachable')
         formatted_message = (f"Error for {title}: {message} \nhere is the magnet instead :D : \n{magnet_link}")
-        await channel.send(formatted_message)
+        await channel.send(embed=make_embed(formatted_message, kind="error"))
     botLogger.info('finished announcing new episode')
 
 
@@ -103,7 +100,12 @@ async def check_for_new_anime(bot):
         selected_entry = next((entry for entry in rss_data if entry['series'].strip().lower() == anime), None)
         if selected_entry:
             await rss_add_feed(selected_entry)
-            await channel.send('I find a treasure: ' + selected_entry['series'] +' ,I added this to the RSS for you ;)')
+            await channel.send(
+                embed=make_embed(
+                    'I find a treasure: ' + selected_entry['series'] + ' ,I added this to the RSS for you ;)',
+                    kind="success",
+                )
+            )
 
     botLogger.info('anime_check_complete')
 

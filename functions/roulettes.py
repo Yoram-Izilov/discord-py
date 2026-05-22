@@ -16,7 +16,9 @@ async def roulette(interaction: discord.Interaction, options: str):
             dict_options[name] = count
 
     if len(dict_options.keys()) < 1: # not a single valid choice in roulette
-        return await interaction.response.send_message("Insert at least one valid option..")
+        return await interaction.response.send_message(
+            embed=make_embed("Insert at least one valid option..", kind="error")
+        )
 
     winner = choose_winner(dict_options.items())
     if len(dict_options.keys()) < 7:
@@ -24,7 +26,9 @@ async def roulette(interaction: discord.Interaction, options: str):
         await interaction.response.send_message(embed=embed, file=file)
     else:
         await interaction.response.send_message(
-            f"The winner is:{winner[RouletteObject.name.value]}"
+            embed=make_embed(
+                f"The winner is:{winner[RouletteObject.name.value]}", kind="success"
+            )
         )
     return winner[RouletteObject.name.value]
 
@@ -45,7 +49,9 @@ def update_options(options, winner):
 async def auto_roulette(interaction: discord.Interaction):
     lines = await roulette_load_all()
     if not lines:
-        await interaction.response.send_message("No options are available. Please add some using `/roulette`.")
+        await interaction.response.send_message(
+            embed=make_embed("No options are available. Please add some using `/roulette`.", kind="info")
+        )
         return
 
     # Create dropdown menu options
@@ -63,20 +69,26 @@ async def auto_roulette(interaction: discord.Interaction):
         select_menu.callback = select_callback
         view.add_item(select_menu)
 
-    await interaction.response.send_message("Choose an option from the dropdown.", view=view)
+    await interaction.response.send_message(
+        embed=make_embed("Choose an option from the dropdown.", kind="info"), view=view
+    )
 
 @trace_function
 async def remove_auto_roulette(interaction: discord.Interaction):
     lines = await roulette_load_all()
     if not lines:
-        return await interaction.response.send_message("No options are available. Please add some using `/add_auto_roulette`.")
+        return await interaction.response.send_message(
+            embed=make_embed("No options are available. Please add some using `/add_auto_roulette`.", kind="info")
+        )
 
     # Create dropdown menu options
     select_menus = create_select_menus(lines)
     async def select_callback(interaction: discord.Interaction):
         selected_roulette = interaction.data['values'][0]
         await roulette_remove(selected_roulette)
-        return await interaction.response.send_message(f"Removed the option set: `{selected_roulette}`")
+        return await interaction.response.send_message(
+            embed=make_embed(f"Removed the option set: `{selected_roulette}`", kind="success")
+        )
 
      # Create a view for the select menus
     view = discord.ui.View()
@@ -84,14 +96,20 @@ async def remove_auto_roulette(interaction: discord.Interaction):
         select_menu.callback = select_callback
         view.add_item(select_menu)
 
-    return await interaction.response.send_message("Choose an option from the dropdown.", view=view)
+    return await interaction.response.send_message(
+        embed=make_embed("Choose an option from the dropdown.", kind="info"), view=view
+    )
 
 @trace_function
 async def add_auto_roulette(interaction: discord.Interaction, option_line: str):
     inserted = await roulette_add(option_line.strip())
     if not inserted:
-        return await interaction.response.send_message(f"The option set `{option_line.strip()}` already exists.")
-    return await interaction.response.send_message(f"Added the new option set: `{option_line.strip()}`")
+        return await interaction.response.send_message(
+            embed=make_embed(f"The option set `{option_line.strip()}` already exists.", kind="warning")
+        )
+    return await interaction.response.send_message(
+        embed=make_embed(f"Added the new option set: `{option_line.strip()}`", kind="success")
+    )
 
 @trace_function
 async def auto_roulette_menu(interaction: discord.Interaction, action, add_option):
@@ -99,10 +117,15 @@ async def auto_roulette_menu(interaction: discord.Interaction, action, add_optio
         await auto_roulette(interaction)
     elif action.value == "add_roulette":
         if add_option is None:
-            await interaction.response.send_message("Please provide a string for the new roulette option:", ephemeral=True)
+            await interaction.response.send_message(
+                embed=make_embed("Please provide a string for the new roulette option:", kind="info"),
+                ephemeral=True,
+            )
             return
         await add_auto_roulette(interaction, add_option)
     elif action.value == "remove_roulette":
         await remove_auto_roulette(interaction)
     else:
-        await interaction.response.send_message("Invalid option selected.", ephemeral=True)
+        await interaction.response.send_message(
+            embed=make_embed("Invalid option selected.", kind="error"), ephemeral=True
+        )

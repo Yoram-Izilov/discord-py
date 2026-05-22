@@ -105,10 +105,21 @@ async def select_callback(interaction: discord.Interaction, user_choice: asyncio
         user_choice.set_result(selected_value)
     await interaction.response.defer()  # Acknowledge the interaction
 
+# builds a color-coded embed; kind in {success, error, info, warning}
+@trace_function
+def make_embed(description, *, kind="info", title=None):
+    color = {
+        "success": discord.Color.green(),
+        "error":   discord.Color.red(),
+        "info":    discord.Color.blurple(),
+        "warning": discord.Color.gold(),
+    }.get(kind, discord.Color.blurple())
+    return discord.Embed(title=title, description=description, color=color)
+
 # returns user selected option from dropdown user interaction
 @trace_function
 async def dropdown_interactions(interaction: discord.Interaction, list, initial_text):
-    # creete the dropdown menus from list 
+    # creete the dropdown menus from list
     select_menus = create_select_menus(list)
 
     # Create a view for the select menus
@@ -119,7 +130,7 @@ async def dropdown_interactions(interaction: discord.Interaction, list, initial_
         select_menu.callback = lambda interaction: select_callback(interaction, user_choice)
         view.add_item(select_menu)
 
-    await interaction.response.send_message(initial_text, view=view)
+    await interaction.response.send_message(embed=make_embed(initial_text, kind="info"), view=view)
     return await user_choice
 
 # endregion
