@@ -1,6 +1,7 @@
 import requests
 from utils.utils import *
 from utils.tracing import trace_function
+from utils.db import rss_get_all_episodes, rss_update_episode, rss_add_feed, rss_get_series_list
 from fuzzywuzzy import fuzz
 from datetime import datetime
 from discord.ext import tasks
@@ -48,34 +49,27 @@ async def announce_new_episode(title, magnet_link, subs, bot):
 @trace_function
 async def check_for_new_episodes(bot):
     botLogger.info('searching for new episodes from the RSS feed')
-    feed_entries = fetch_rss_feed()  # RSS feed entries from URL
-    saved_entries = load_json_data(RSS_FILE_PATH)  # Current subscriptions from the JSON file
+    feed_entries = fetch_rss_feed()
+    saved_entries = await rss_get_all_episodes()
 
-    # Iterate through each feed entry and compare it with saved entries
     for feed_entry in feed_entries:
-        # Find the corresponding saved entry by series name
         matching_entry = next(
             (entry for entry in saved_entries if entry["series"] == feed_entry["series"]), None
         )
         if matching_entry:
-            # If the saved entry exists, compare the pubDate to see if it has been updated
             saved_pub_date = parse_pub_date(matching_entry["pubDate"])
             new_pub_date = parse_pub_date(feed_entry["pubDate"])
 
-            # If the pubDate is newer, update the saved entry
             if new_pub_date > saved_pub_date:
-                # Update the fields (you can add more fields as needed)
-                matching_entry["pubDate"]   = feed_entry["pubDate"]
-                matching_entry["title"]     = feed_entry["title"]
-                matching_entry["link"]      = feed_entry["link"]
-                matching_entry["size"]      = feed_entry["size"]
+                await rss_update_episode(
+                    feed_entry["series"],
+                    feed_entry["pubDate"],
+                    feed_entry["title"],
+                    feed_entry["link"],
+                    feed_entry["size"],
+                )
+                await announce_new_episode(feed_entry["title"], feed_entry["link"], matching_entry["subs"], bot)
 
-                await announce_new_episode(matching_entry["title"], matching_entry["link"], matching_entry["subs"], bot)
-    
-    botLogger.info('finished searching for new episodes from the RSS feed')
-
-    # Save the updated subscriptions back to the JSON file
-    save_json_data(RSS_FILE_PATH, saved_entries)
     botLogger.info('rss_check_complete')
 
 # The actual task loop
@@ -91,7 +85,7 @@ async def check_for_new_anime(bot):
     update_anime_list_by_status(Statuses.CURRENTLY_WATCHING.value)
 
     rss_data = fetch_rss_feed()
-    existing_series = get_json_field_as_array(RSS_FILE_PATH, "series")
+    existing_series = await rss_get_series_list()
     feed_names = list(map(lambda x: x["series"], rss_data))
     filtered_series = [series for series in feed_names if series not in existing_series]
     filtered_series = list(map(lambda x: x.strip().lower(), filtered_series))
@@ -108,11 +102,7 @@ async def check_for_new_anime(bot):
     for anime in similarity_list:
         selected_entry = next((entry for entry in rss_data if entry['series'].strip().lower() == anime), None)
         if selected_entry:
-            # Add the selected full entry to the JSON file
-            json_data = load_json_data(RSS_FILE_PATH)
-            json_data.append(selected_entry)  # Append the entire entry
-            save_json_data(RSS_FILE_PATH, json_data)
-
+            await rss_add_feed(selected_entry)
             await channel.send('I find a treasure: ' + selected_entry['series'] +' ,I added this to the RSS for you ;)')
 
     botLogger.info('anime_check_complete')
