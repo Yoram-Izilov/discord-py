@@ -7,6 +7,19 @@ pipeline {
     }
 
     stages {
+        stage('Deploy Monitoring') {
+            when { changeset 'monitoring/**' }
+            steps {
+                echo "Deploying monitoring stack..."
+                withCredentials([string(credentialsId: 'grafana-admin-password',
+                                        variable: 'GRAFANA_ADMIN_PASSWORD')]) {
+                    dir('monitoring') {
+                        sh 'docker compose up -d'
+                    }
+                }
+            }
+        }
+
         stage('Deploy') {
             steps {
                 echo "Deploying with docker-compose..."
