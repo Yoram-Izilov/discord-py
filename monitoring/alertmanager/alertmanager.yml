@@ -11,7 +11,7 @@ route:
 receivers:
   - name: 'discord'
     discord_configs:
-      - webhook_url: 'https://discord.com/api/webhooks/1507027183334330489/7lJ6qL5lUApWGlSc9l5noazV-balCXbeK9T7eUq2SEi5vKg1cc_ovUREHD3LxnxVyg8t'
+      - webhook_url_file: /etc/alertmanager/discord-webhook-url
         send_resolved: true
         title: '[{{ .Status | toUpper }}{{ if eq .Status "firing" }}:{{ .Alerts.Firing | len }}{{ end }}] {{ .CommonLabels.alertname }}'
         message: |
