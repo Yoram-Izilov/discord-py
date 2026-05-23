@@ -44,7 +44,7 @@ Runtime container settings (from the pipeline — keep these in sync if you chan
 
 If you change the image name, mount paths, network, or OTel endpoint in code or the Dockerfile, update the `Jenkinsfile` in the same commit (`chore(docker): ...`).
 
-The monitoring stack lives in `monitoring/docker-compose.yml` (Prometheus, Grafana, Loki, Promtail, Tempo, OTel Collector, Alertmanager, Pyroscope, node-exporter). It is deployed by a separate `Deploy Monitoring` stage in `Jenkinsfile` that runs only when files under `monitoring/**` change. Grafana's admin password is read from `GRAFANA_ADMIN_PASSWORD`, injected by Jenkins from a **Secret text** credential with ID `grafana-admin-password` (Manage Jenkins → Credentials). For local dev, put `GRAFANA_ADMIN_PASSWORD=...` in `monitoring/.env` (gitignored; see `monitoring/.env.example`).
+The monitoring stack lives in `monitoring/docker-compose.yml` (Prometheus, Grafana, Loki, Promtail, Tempo, OTel Collector, Alertmanager, Pyroscope, node-exporter). It is deployed by a separate `Deploy Monitoring` stage in `Jenkinsfile` that runs only when files under `monitoring/**` change. Grafana's admin password is read from `GRAFANA_ADMIN_PASSWORD`, injected by Jenkins from a **Secret text** credential with ID `grafana-admin-password` (Manage Jenkins → Credentials). For local dev, put `GRAFANA_ADMIN_PASSWORD=...` in `monitoring/.env` (gitignored).
 
 ## Architecture
 
