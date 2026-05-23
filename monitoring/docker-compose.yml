@@ -1,3 +1,4 @@
+# Docker Compose file for monitoring stack with Prometheus, Grafana, Loki, Tempo, and Alertmanager
 services:
   prometheus:
     image: prom/prometheus:v3.11.3
