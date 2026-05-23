@@ -24,7 +24,6 @@ pipeline {
                         rsync -a --delete monitoring/ "$MONITORING_DEPLOY_PATH/"
                         umask 077
                         printf "%s" "$DISCORD_WEBHOOK_URL" > "$MONITORING_DEPLOY_PATH/alertmanager/discord-webhook-url"
-                        docker compose -p monitoring -f "$MONITORING_DEPLOY_PATH/docker-compose.yml" up -d --force-recreate alertmanager
                         docker compose -p monitoring -f "$MONITORING_DEPLOY_PATH/docker-compose.yml" up -d
                     '''
                 }
