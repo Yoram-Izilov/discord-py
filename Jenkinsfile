@@ -9,13 +9,17 @@ pipeline {
     stages {
         stage('Deploy Monitoring') {
             when { changeset 'monitoring/**' }
+            environment {
+                MONITORING_DEPLOY_PATH = '/home/izilov/Desktop/discord-monitoring'
+            }
             steps {
                 echo "Deploying monitoring stack..."
                 withCredentials([string(credentialsId: 'grafana-admin-password',
                                         variable: 'GRAFANA_ADMIN_PASSWORD')]) {
-                    dir('monitoring') {
-                        sh 'docker compose up -d'
-                    }
+                    sh '''
+                        rsync -a --delete monitoring/ "$MONITORING_DEPLOY_PATH/"
+                        docker compose -p monitoring -f "$MONITORING_DEPLOY_PATH/docker-compose.yml" up -d
+                    '''
                 }
             }
         }

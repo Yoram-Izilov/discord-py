@@ -46,6 +46,8 @@ If you change the image name, mount paths, network, or OTel endpoint in code or 
 
 The monitoring stack lives in `monitoring/docker-compose.yml` (Prometheus, Grafana, Loki, Promtail, Tempo, OTel Collector, Alertmanager, Pyroscope, node-exporter). It is deployed by a separate `Deploy Monitoring` stage in `Jenkinsfile` that runs only when files under `monitoring/**` change. Grafana's admin password is read from `GRAFANA_ADMIN_PASSWORD`, injected by Jenkins from a **Secret text** credential with ID `grafana-admin-password` (Manage Jenkins → Credentials). For local dev, put `GRAFANA_ADMIN_PASSWORD=...` in `monitoring/.env` (gitignored).
 
+Jenkins runs in a container that talks to the host Docker daemon, so the monitoring stack's relative bind mounts (`./loki/loki-config.yaml`) must resolve to a path the host can also see. The `Deploy Monitoring` stage rsyncs `monitoring/` into `/home/izilov/Desktop/discord-monitoring/` and runs `docker compose -p monitoring -f .../docker-compose.yml up -d` from there. That host path must be bind-mounted into the Jenkins container at the same path (`-v /home/izilov/Desktop/discord-monitoring:/home/izilov/Desktop/discord-monitoring`), and `rsync` must be installed in the Jenkins image. The `-p monitoring` flag pins the compose project name so the external network stays `monitoring_monitoring` (which the bot's compose attaches to).
+
 ## Architecture
 
 `bot.py` is the entry point. It registers all slash commands and wires them to handler functions in `functions/`. The command implementations do not live in `bot.py` — they are thin wrappers that delegate immediately.
