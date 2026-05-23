@@ -6,7 +6,12 @@ try {
     $cmd = $data.tool_input.command
     if (-not $cmd) { exit 0 }
 
-    if ($cmd -notmatch '\bgit\s+commit\b') { exit 0 }
+    # Anchor to start of command so this hook does not false-positive when
+    # other commands (e.g. `gh pr create --body "..."`) mention "git commit"
+    # in a quoted body.
+    $trimmed = $cmd.Trim()
+    if ($trimmed -notmatch '^git\s+commit\b') { exit 0 }
+    $cmd = $trimmed
 
     $hasMessage = ($cmd -match '\s-m\b') -or ($cmd -match '\s--message\b')
     if (-not $hasMessage) { exit 0 }
