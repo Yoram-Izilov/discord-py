@@ -9,21 +9,37 @@ from utils.db import (
 )
 from utils.tracing import trace_function
 from utils.utils import make_embed, fetch_rss_feed
-from functions.tasks import string_similar
+from functions.tasks import fuzz_similarity, string_similar
 
 SEASON_VIEW_TIMEOUT = 900  # 15 minutes
 SYNOPSIS_MAX = 350
 
 
-async def _find_existing_rss_series(anime_title: str) -> str | None:
-    """Return the rss_feeds.series that fuzzy-matches `anime_title`, or None."""
-    anime_norm = (anime_title or "").strip().lower()
-    if not anime_norm:
-        return None
-    for series in await rss_get_series_list():
-        if string_similar(series.strip().lower(), anime_norm):
-            return series
-    return None
+def _quick_match(a: str, b: str) -> bool:
+    """Lightweight matcher used for the season -> rss_feeds precompute.
+    Drops the TF-IDF fallback in functions.tasks.string_similar because each
+    TfidfVectorizer.fit_transform allocates significant numpy work, and for
+    MAL-title vs SubsPlease-series matching fuzz.ratio is plenty."""
+    return fuzz_similarity(a, b) > 0.85
+
+
+def _build_match_map(anime_list: list[dict], all_series: list[str]) -> dict[int, str]:
+    """For each season anime, find the first existing rss_feeds.series that
+    fuzzy-matches its title. Runs once on /season_anime invocation."""
+    lowered = [(s, s.strip().lower()) for s in all_series]
+    matched: dict[int, str] = {}
+    for anime in anime_list:
+        mal_id = anime.get("mal_id")
+        if mal_id is None:
+            continue
+        title = (anime.get("title") or "").strip().lower()
+        if not title:
+            continue
+        for series, series_norm in lowered:
+            if _quick_match(series_norm, title):
+                matched[int(mal_id)] = series
+                break
+    return matched
 
 
 async def _try_auto_add_rss(anime_title: str, user_id: int) -> str | None:
@@ -44,19 +60,23 @@ async def _try_auto_add_rss(anime_title: str, user_id: int) -> str | None:
     return None
 
 
-async def _is_subscribed(user_id: int, series: str) -> bool:
-    subs = await rss_get_subscribed_series(user_id)
-    return series in subs
-
-
 class SeasonView(discord.ui.View):
-    def __init__(self, anime_list: list[dict], owner_id: int):
+    def __init__(
+        self,
+        anime_list: list[dict],
+        owner_id: int,
+        matched_by_mal_id: dict[int, str],
+        subscribed_set: set[str],
+    ):
         super().__init__(timeout=SEASON_VIEW_TIMEOUT)
         self.anime_list = anime_list
         self.owner_id = owner_id
         self.page = 0
+        self._matched_by_mal_id = matched_by_mal_id
+        self._subscribed_set = subscribed_set
         self._matched_series: str | None = None
         self._user_subscribed: bool = False
+        self.refresh_state()
 
     async def interaction_check(self, interaction: discord.Interaction) -> bool:
         if interaction.user.id != self.owner_id:
@@ -71,12 +91,15 @@ class SeasonView(discord.ui.View):
             return False
         return True
 
-    async def refresh_state(self) -> None:
-        title = (self.anime_list[self.page].get("title") or "")
-        self._matched_series = await _find_existing_rss_series(title)
-        self._user_subscribed = (
-            await _is_subscribed(self.owner_id, self._matched_series)
-            if self._matched_series else False
+    def _current_mal_id(self) -> int | None:
+        mal_id = self.anime_list[self.page].get("mal_id")
+        return int(mal_id) if mal_id is not None else None
+
+    def refresh_state(self) -> None:
+        mal_id = self._current_mal_id()
+        self._matched_series = self._matched_by_mal_id.get(mal_id) if mal_id is not None else None
+        self._user_subscribed = bool(
+            self._matched_series and self._matched_series in self._subscribed_set
         )
         self._rebuild_buttons()
 
@@ -139,17 +162,18 @@ class SeasonView(discord.ui.View):
 
     async def _on_prev(self, interaction: discord.Interaction):
         self.page = (self.page - 1) % len(self.anime_list)
-        await self.refresh_state()
+        self.refresh_state()
         await interaction.response.edit_message(embed=self.render_embed(), view=self)
 
     async def _on_next(self, interaction: discord.Interaction):
         self.page = (self.page + 1) % len(self.anime_list)
-        await self.refresh_state()
+        self.refresh_state()
         await interaction.response.edit_message(embed=self.render_embed(), view=self)
 
     async def _on_subscribe(self, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral=True)
         anime_title = self.anime_list[self.page].get("title") or ""
+        mal_id = self._current_mal_id()
 
         if not self._matched_series:
             auto_added = await _try_auto_add_rss(anime_title, interaction.user.id)
@@ -163,6 +187,9 @@ class SeasonView(discord.ui.View):
                     ephemeral=True,
                 )
                 return
+            if mal_id is not None:
+                self._matched_by_mal_id[mal_id] = auto_added
+            self._subscribed_set.add(auto_added)
             self._matched_series = auto_added
             self._user_subscribed = True
             self._rebuild_buttons()
@@ -177,6 +204,7 @@ class SeasonView(discord.ui.View):
             return
 
         ok = await rss_subscribe(self._matched_series, interaction.user.id)
+        self._subscribed_set.add(self._matched_series)
         self._user_subscribed = True
         self._rebuild_buttons()
         await interaction.message.edit(view=self)
@@ -196,6 +224,7 @@ class SeasonView(discord.ui.View):
             )
             return
         ok = await rss_unsubscribe(self._matched_series, interaction.user.id)
+        self._subscribed_set.discard(self._matched_series)
         self._user_subscribed = False
         self._rebuild_buttons()
         await interaction.message.edit(view=self)
@@ -216,6 +245,15 @@ async def season_anime(interaction: discord.Interaction):
             embed=make_embed("Could not fetch the current season from Jikan.", kind="error")
         )
         return
-    view = SeasonView(season, owner_id=interaction.user.id)
-    await view.refresh_state()
+
+    all_series = await rss_get_series_list()
+    subscribed_set = set(await rss_get_subscribed_series(interaction.user.id))
+    matched_by_mal_id = _build_match_map(season, all_series)
+
+    view = SeasonView(
+        season,
+        owner_id=interaction.user.id,
+        matched_by_mal_id=matched_by_mal_id,
+        subscribed_set=subscribed_set,
+    )
     await interaction.followup.send(embed=view.render_embed(), view=view)
