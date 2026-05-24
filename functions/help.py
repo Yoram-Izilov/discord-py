@@ -21,6 +21,7 @@ CATEGORIES: dict[str, str] = {
     "anime_list":       "📺 Anime / MAL",
     "next_anime":       "📺 Anime / MAL",
     "mal_link":         "📺 Anime / MAL",
+    "mal_unlink":       "📺 Anime / MAL",
     "next_episode":     "📺 Anime / MAL",
     "mal_compare":      "📺 Anime / MAL",
     "mal_stats":        "📺 Anime / MAL",

@@ -421,6 +421,22 @@ async def mal_link_discord(username: str, discord_user_id: int) -> bool:
 
 
 @trace_function
+async def mal_unlink_discord(discord_user_id: int) -> str | None:
+    """Clear the Discord binding for this user. Returns the MAL username that
+    was bound (so the caller can echo it back), or None if no binding existed."""
+    async with get_pool().acquire() as conn:
+        row = await conn.fetchrow(
+            """
+            UPDATE mal_profiles SET discord_user_id = NULL
+            WHERE discord_user_id = $1
+            RETURNING username
+            """,
+            discord_user_id,
+        )
+    return row["username"] if row else None
+
+
+@trace_function
 async def mal_get_username_for_discord(discord_user_id: int) -> str | None:
     async with get_pool().acquire() as conn:
         row = await conn.fetchrow(
