@@ -14,6 +14,7 @@ from utils.utils import make_embed
 # all discord user functions
 from functions.roulettes import roulette, auto_roulette_menu
 from functions.voice import play, leave
+from functions.queue import queue_play, skip_track, queue_show, now_playing, op_play
 from functions.feed import rss_menu
 from functions.nyaa import search
 from functions.mal import (
@@ -187,6 +188,38 @@ async def leave_command(interaction: discord.Interaction):
 async def play_command(interaction: discord.Interaction, query: str):
     botLogger.info('run play_command')
     await play(interaction, query, bot)
+
+@bot.tree.command(name="queue_play", description="Queue a track (joins the queue if something is already playing)")
+@app_commands.describe(query="YouTube URL or search query")
+@trace_function
+async def queue_play_command(interaction: discord.Interaction, query: str):
+    botLogger.info('run queue_play_command')
+    await queue_play(interaction, query)
+
+@bot.tree.command(name="skip", description="Skip the currently playing track")
+@trace_function
+async def skip_command(interaction: discord.Interaction):
+    botLogger.info('run skip_command')
+    await skip_track(interaction)
+
+@bot.tree.command(name="queue", description="Show the current music queue")
+@trace_function
+async def queue_command(interaction: discord.Interaction):
+    botLogger.info('run queue_command')
+    await queue_show(interaction)
+
+@bot.tree.command(name="now_playing", description="Show the currently playing track")
+@trace_function
+async def now_playing_command(interaction: discord.Interaction):
+    botLogger.info('run now_playing_command')
+    await now_playing(interaction)
+
+@bot.tree.command(name="op", description="Queue an anime opening from YouTube")
+@app_commands.describe(anime="Name of the anime")
+@trace_function
+async def op_command(interaction: discord.Interaction, anime: str):
+    botLogger.info('run op_command')
+    await op_play(interaction, anime)
 
 #endregion
 
