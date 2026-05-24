@@ -113,14 +113,25 @@ SNAPSHOT_STALE_SECONDS = 6 * 60 * 60
 
 @trace_function
 async def _refresh_user_snapshot(username: str) -> list[dict]:
-    """Pull `username`'s full MAL list, replace their snapshot, write activity
-    rows for the diff. Returns the diff rows (empty if list private/empty or
-    nothing changed). Callers that just want freshness can ignore the return."""
+    """Pull `username`'s full MAL list, replace their snapshot, and write
+    activity rows for the diff — but ONLY when there was a prior snapshot.
+
+    On the first ingest for a user, mal_snapshot_replace produces fake diffs
+    (delta_episodes = total episodes ever watched per anime, new_status set
+    for everything). Writing those to mal_activity would pollute the weekly
+    leaderboard and /mal_stats with a one-time burst that equals the user's
+    all-time totals. We populate the snapshot but skip the activity dump.
+
+    Returns the diff rows so callers can still inspect them — milestone
+    emitters separately gate on a `is_first_ingest` flag (see
+    refresh_all_mal_snapshots) so spurious new_status=COMPLETED rows from
+    first ingest don't trigger announcements either."""
     entries = await anime_api.get_user_list(username)
     if not entries:
         return []
+    prior_existed = bool(await mal_snapshot_updated_at(username))
     diff = await mal_snapshot_replace(username, entries)
-    if diff:
+    if diff and prior_existed:
         await mal_activity_record([dict(d, username=username) for d in diff])
     return diff
 
@@ -178,9 +189,11 @@ async def mal_link(interaction: discord.Interaction, mal_username: str):
         )
         return
 
-    diff = await mal_snapshot_replace(mal_username, entries)
-    if diff:
-        await mal_activity_record([dict(d, username=mal_username) for d in diff])
+    # First ingest by definition — don't write activity rows. The initial
+    # diff's delta_episodes equals each anime's total episodes_watched, which
+    # would otherwise pollute the weekly leaderboard with a one-off burst
+    # equal to the user's all-time totals.
+    await mal_snapshot_replace(mal_username, entries)
 
     await interaction.followup.send(
         embed=make_embed(
