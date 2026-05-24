@@ -9,7 +9,8 @@ from utils.utils import *
 from utils.tracing import trace_function
 from utils.db import (
     mal_get_users, mal_add_user, mal_remove_user, anime_list_get,
-    mal_link_discord, mal_get_username_for_discord, mal_get_discord_for_username,
+    mal_link_discord, mal_unlink_discord,
+    mal_get_username_for_discord, mal_get_discord_for_username,
     mal_snapshot_replace, mal_snapshot_get, mal_snapshot_updated_at,
     mal_activity_record, mal_activity_episodes_by_month, mal_score_distribution,
     mal_who_has,
@@ -198,6 +199,30 @@ async def mal_link(interaction: discord.Interaction, mal_username: str):
     await interaction.followup.send(
         embed=make_embed(
             f"✅ Linked to **{mal_username}** — {len(entries)} entries cached.",
+            kind="success",
+        ),
+        ephemeral=True,
+    )
+
+
+@trace_function
+async def mal_unlink(interaction: discord.Interaction):
+    await interaction.response.defer(ephemeral=True)
+    unlinked = await mal_unlink_discord(interaction.user.id)
+    if unlinked is None:
+        await interaction.followup.send(
+            embed=make_embed(
+                "You don't have a MAL account linked. Use `/mal_link` first.",
+                kind="info",
+            ),
+            ephemeral=True,
+        )
+        return
+    await interaction.followup.send(
+        embed=make_embed(
+            f"🔓 Unlinked **{unlinked}** from your Discord. Your cached list "
+            "data stays for community queries — use `/mal` → Remove user if "
+            "you want it wiped entirely.",
             kind="success",
         ),
         ephemeral=True,

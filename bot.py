@@ -18,7 +18,7 @@ from functions.queue import queue_play, skip_track, queue_show, now_playing, op_
 from functions.feed import rss_menu
 from functions.nyaa import search
 from functions.mal import (
-    mal_menu, anime_list_menu, next_anime, mal_link,
+    mal_menu, anime_list_menu, next_anime, mal_link, mal_unlink,
     next_episode, mal_compare, mal_stats, anime_recommend, who_is_watching,
 )
 from functions.season import season_anime
@@ -301,6 +301,12 @@ async def next_anime_command(interaction: discord.Interaction):
 async def mal_link_command(interaction: discord.Interaction, mal_username: str):
     botLogger.info('run mal_link_command')
     await mal_link(interaction, mal_username)
+
+@bot.tree.command(name="mal_unlink", description="Remove the link between your Discord and your MAL username")
+@trace_function
+async def mal_unlink_command(interaction: discord.Interaction):
+    botLogger.info('run mal_unlink_command')
+    await mal_unlink(interaction)
 
 @bot.tree.command(name="next_episode", description="Countdown until an anime's next episode")
 @app_commands.describe(anime="Anime title to search for")
