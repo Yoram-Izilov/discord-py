@@ -14,6 +14,7 @@ from utils.db import (
     mal_snapshot_replace, mal_snapshot_get, mal_snapshot_updated_at,
     mal_activity_record, mal_activity_episodes_by_month, mal_score_distribution,
     mal_who_has,
+    rss_get_subscribed_series,
 )
 from utils import anime_api
 
@@ -307,22 +308,18 @@ async def _pick_anime(interaction: discord.Interaction, query: str) -> dict | No
     return by_value.get(choice)
 
 
-def _format_next_episode(anime: dict) -> str:
-    """Render a one-line description of when the next episode airs."""
-    airing = anime.get("airing")
-    status = anime.get("status") or ""
+def _next_airing_ts(anime: dict) -> int | None:
+    """Compute the UNIX timestamp of the next episode air time from Jikan
+    broadcast info. Returns None if the anime isn't airing or broadcast
+    metadata is missing/unparseable."""
+    if not anime.get("airing"):
+        return None
     broadcast = anime.get("broadcast") or {}
     day = (broadcast.get("day") or "").lower()
     time_str = broadcast.get("time") or ""
     tz_name = broadcast.get("timezone") or "Asia/Tokyo"
-
-    if not airing:
-        return f"📺 **{status or 'Not currently airing'}**"
-
     if not (day and time_str and day in WEEKDAYS and ZoneInfo):
-        broadcast_str = broadcast.get("string") or "Schedule unknown"
-        return f"📺 Currently airing — broadcast: {broadcast_str}"
-
+        return None
     try:
         hour, minute = (int(x) for x in time_str.split(":"))
         tz = ZoneInfo(tz_name)
@@ -333,11 +330,21 @@ def _format_next_episode(anime: dict) -> str:
                           + timedelta(days=days_ahead)
         if candidate <= now_tz:
             candidate += timedelta(days=7)
-        unix_ts = int(candidate.astimezone(timezone.utc).timestamp())
-        return f"📺 Next episode <t:{unix_ts}:R> (<t:{unix_ts}:F>)"
+        return int(candidate.astimezone(timezone.utc).timestamp())
     except Exception:
-        broadcast_str = broadcast.get("string") or "Schedule unknown"
+        return None
+
+
+def _format_next_episode(anime: dict) -> str:
+    """Render a one-line description of when the next episode airs."""
+    ts = _next_airing_ts(anime)
+    if ts is not None:
+        return f"📺 Next episode <t:{ts}:R> (<t:{ts}:F>)"
+    if anime.get("airing"):
+        broadcast_str = (anime.get("broadcast") or {}).get("string") or "Schedule unknown"
         return f"📺 Currently airing — broadcast: {broadcast_str}"
+    status = anime.get("status") or "Not currently airing"
+    return f"📺 **{status}**"
 
 
 # ---------------------------------------------------------------------------
@@ -345,14 +352,16 @@ def _format_next_episode(anime: dict) -> str:
 # ---------------------------------------------------------------------------
 
 @trace_function
-async def next_episode(interaction: discord.Interaction, anime: str):
+async def next_episode(interaction: discord.Interaction, anime: str | None = None):
     await interaction.response.defer()
-    if not anime:
-        await interaction.followup.send(
-            embed=make_embed("❌ Please name an anime.", kind="error")
-        )
-        return
+    if anime:
+        await _next_episode_search(interaction, anime)
+    else:
+        await _next_episode_for_subscriptions(interaction)
 
+
+@trace_function
+async def _next_episode_search(interaction: discord.Interaction, anime: str):
     picked = await _pick_anime(interaction, anime)
     if not picked:
         return
@@ -379,6 +388,58 @@ async def next_episode(interaction: discord.Interaction, anime: str):
     image = ((full.get("images") or {}).get("jpg") or {}).get("image_url")
     if image:
         embed.set_thumbnail(url=image)
+    await interaction.followup.send(embed=embed)
+
+
+@trace_function
+async def _next_episode_for_subscriptions(interaction: discord.Interaction):
+    subs = await rss_get_subscribed_series(interaction.user.id)
+    if not subs:
+        await interaction.followup.send(
+            embed=make_embed(
+                "You don't have any RSS subscriptions. Use `/season_anime` or "
+                "`/rss` to subscribe to a series first, then re-run this "
+                "(or pass `anime:` to look up a specific one).",
+                kind="info",
+            )
+        )
+        return
+
+    # Concurrent searches — Jikan's internal semaphore + ratelimiter keeps
+    # us within ~3 rps. Cached entries return instantly on later runs.
+    search_results = await asyncio.gather(*(
+        anime_api.search_anime(series, limit=1) for series in subs
+    ), return_exceptions=True)
+
+    rows: list[tuple[int | None, str]] = []
+    for series, result in zip(subs, search_results):
+        if isinstance(result, Exception) or not result:
+            rows.append((None, f"**{series}** — _not found on MAL_"))
+            continue
+        anime = result[0]
+        title = anime.get("title") or series
+        ts = _next_airing_ts(anime)
+        if ts is not None:
+            rows.append((ts, f"**{title}** — <t:{ts}:R>"))
+        elif anime.get("airing"):
+            broadcast_str = (anime.get("broadcast") or {}).get("string") or "schedule unknown"
+            rows.append((None, f"**{title}** — _airing, {broadcast_str}_"))
+        else:
+            status = anime.get("status") or "not airing"
+            rows.append((None, f"**{title}** — _{status.lower()}_"))
+
+    # Sort: rows with timestamps first (soonest first), unscheduled at the bottom.
+    rows.sort(key=lambda r: (r[0] is None, r[0] if r[0] is not None else 0))
+    body = "\n".join(line for _, line in rows)
+
+    embed = make_embed(
+        body,
+        kind="info",
+        title="📺 Next episodes for your subscriptions",
+    )
+    embed.set_footer(
+        text="Pass `anime:` to /next_episode to look up a specific show instead."
+    )
     await interaction.followup.send(embed=embed)
 
 

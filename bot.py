@@ -308,10 +308,10 @@ async def mal_unlink_command(interaction: discord.Interaction):
     botLogger.info('run mal_unlink_command')
     await mal_unlink(interaction)
 
-@bot.tree.command(name="next_episode", description="Countdown until an anime's next episode")
-@app_commands.describe(anime="Anime title to search for")
+@bot.tree.command(name="next_episode", description="Next episode for each of your RSS subs (or pass anime: to look up one)")
+@app_commands.describe(anime="Optional: look up a specific anime instead of your subscription list")
 @trace_function
-async def next_episode_command(interaction: discord.Interaction, anime: str):
+async def next_episode_command(interaction: discord.Interaction, anime: str = None):
     botLogger.info('run next_episode_command')
     await next_episode(interaction, anime)
 
