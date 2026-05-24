@@ -4,7 +4,7 @@ from utils.tracing import trace_function
 from utils.db import (
     rss_get_all_episodes, rss_update_episode, rss_add_feed, rss_get_series_list,
     episode_announcement_record,
-    mal_get_users, mal_get_discord_for_username,
+    mal_get_users, mal_get_discord_for_username, mal_snapshot_get,
     mal_activity_episodes_by_month, mal_activity_leaderboard, mal_alltime_leader,
 )
 from fuzzywuzzy import fuzz
@@ -177,10 +177,27 @@ async def refresh_all_mal_snapshots(bot):
 
     for username in users:
         try:
-            prev_monthly = await _monthly_total(username)
+            # First-ingest guard: if we have no snapshot for this user yet, the
+            # diff returned by _refresh_user_snapshot below treats every entry
+            # as a status change (mal_id not in old → status_changed=True),
+            # which would fire a milestone for every completed anime they own.
+            # Skip milestone emission on the run that populates the snapshot.
+            prior_snapshot = await mal_snapshot_get(username)
+            is_first_ingest = not prior_snapshot
+
+            prev_monthly = 0 if is_first_ingest else await _monthly_total(username)
             diff = await _refresh_user_snapshot(username)
             if not diff:
                 continue
+
+            if is_first_ingest:
+                botLogger.info(
+                    "refresh_all_mal_snapshots: first ingest for %s, "
+                    "suppressing %d milestone events",
+                    username, len(diff),
+                )
+                continue
+
             new_monthly = await _monthly_total(username)
             mention = await _user_mention_or_name(username)
 
