@@ -16,7 +16,10 @@ from functions.roulettes import roulette, auto_roulette_menu
 from functions.voice import play, leave
 from functions.feed import rss_menu
 from functions.nyaa import search
-from functions.mal import mal_menu, anime_list_menu, next_anime, mal_link
+from functions.mal import (
+    mal_menu, anime_list_menu, next_anime, mal_link,
+    next_episode, mal_compare, mal_stats, anime_recommend, who_is_watching,
+)
 from functions.tasks import _run_new_episode_check_logic, check_for_new_anime
 
 from opentelemetry import trace
@@ -224,6 +227,39 @@ async def next_anime_command(interaction: discord.Interaction):
 async def mal_link_command(interaction: discord.Interaction, mal_username: str):
     botLogger.info('run mal_link_command')
     await mal_link(interaction, mal_username)
+
+@bot.tree.command(name="next_episode", description="Countdown until an anime's next episode")
+@app_commands.describe(anime="Anime title to search for")
+@trace_function
+async def next_episode_command(interaction: discord.Interaction, anime: str):
+    botLogger.info('run next_episode_command')
+    await next_episode(interaction, anime)
+
+@bot.tree.command(name="mal_compare", description="Compare your MAL list with another linked user")
+@app_commands.describe(other="The Discord user to compare against")
+@trace_function
+async def mal_compare_command(interaction: discord.Interaction, other: discord.Member):
+    botLogger.info('run mal_compare_command')
+    await mal_compare(interaction, other)
+
+@bot.tree.command(name="mal_stats", description="Show your MAL activity charts")
+@trace_function
+async def mal_stats_command(interaction: discord.Interaction):
+    botLogger.info('run mal_stats_command')
+    await mal_stats(interaction)
+
+@bot.tree.command(name="anime_recommend", description="Pick a random anime from your plan-to-watch list")
+@trace_function
+async def anime_recommend_command(interaction: discord.Interaction):
+    botLogger.info('run anime_recommend_command')
+    await anime_recommend(interaction)
+
+@bot.tree.command(name="who_is_watching", description="See which linked members are currently watching an anime")
+@app_commands.describe(anime="Anime title to search for")
+@trace_function
+async def who_is_watching_command(interaction: discord.Interaction, anime: str):
+    botLogger.info('run who_is_watching_command')
+    await who_is_watching(interaction, anime)
 
 #endregion
 
