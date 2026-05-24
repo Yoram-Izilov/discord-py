@@ -238,24 +238,17 @@ async def weekly_leaderboard(bot):
 
     week_ago = datetime.now(tz=timezone.utc) - timedelta(days=7)
     top = await mal_activity_leaderboard(since=week_ago)
-
-    if not top:
-        await channel.send(
-            embed=make_embed(
-                "📊 No tracked MAL activity this week.",
-                kind="info",
-                title="Weekly anime leaderboard",
-            )
-        )
-        return
+    alltime = await mal_alltime_leader()
 
     medals = ["🥇", "🥈", "🥉", "4️⃣", "5️⃣"]
     lines: list[str] = []
-    for i, (username, total) in enumerate(top[:5]):
-        mention = await _user_mention_or_name(username)
-        lines.append(f"{medals[i]} {mention} — **{total}** episodes")
+    if top:
+        for i, (username, total) in enumerate(top[:5]):
+            mention = await _user_mention_or_name(username)
+            lines.append(f"{medals[i]} {mention} — **{total}** episodes")
+    else:
+        lines.append("_No tracked MAL activity this week._")
 
-    alltime = await mal_alltime_leader()
     if alltime:
         alltime_mention = await _user_mention_or_name(alltime[0])
         lines.append("")
