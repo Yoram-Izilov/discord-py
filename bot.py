@@ -20,7 +20,10 @@ from functions.mal import (
     mal_menu, anime_list_menu, next_anime, mal_link,
     next_episode, mal_compare, mal_stats, anime_recommend, who_is_watching,
 )
+from functions.season import season_anime
 from functions.tasks import _run_new_episode_check_logic, check_for_new_anime
+from utils.db import episode_announcement_get_series, rss_subscribe
+from config.consts import OTAKU_CHANNEL_ID
 
 from opentelemetry import trace
 from opentelemetry.sdk.resources import Resource
@@ -93,6 +96,37 @@ async def on_error(event, *args, **kwargs):
         exc,
         "".join(traceback.format_exception(exc_type, exc, tb)),
     )
+
+
+REACTION_SUBSCRIBE_EMOJI = "🔔"
+
+
+@bot.event
+@trace_function
+async def on_raw_reaction_add(payload: discord.RawReactionActionEvent):
+    if payload.user_id == bot.user.id:
+        return
+    if payload.channel_id != OTAKU_CHANNEL_ID:
+        return
+    if str(payload.emoji) != REACTION_SUBSCRIBE_EMOJI:
+        return
+
+    series = await episode_announcement_get_series(payload.message_id)
+    if not series:
+        return
+
+    if not await rss_subscribe(series, payload.user_id):
+        return  # already subscribed — no need to DM again
+
+    user = bot.get_user(payload.user_id) or await bot.fetch_user(payload.user_id)
+    if user is None:
+        return
+    try:
+        await user.send(
+            embed=make_embed(f"✅ Subscribed to **{series}** via 🔔 reaction.", kind="success")
+        )
+    except discord.HTTPException as e:
+        botLogger.info("could not DM %s after reaction-subscribe: %s", payload.user_id, e)
 
 
 @bot.tree.error
@@ -260,6 +294,16 @@ async def anime_recommend_command(interaction: discord.Interaction):
 async def who_is_watching_command(interaction: discord.Interaction, anime: str):
     botLogger.info('run who_is_watching_command')
     await who_is_watching(interaction, anime)
+
+#endregion
+
+#region Season
+
+@bot.tree.command(name="season_anime", description="Browse this season's airing anime, subscribe with the 🔔 button")
+@trace_function
+async def season_anime_command(interaction: discord.Interaction):
+    botLogger.info('run season_anime_command')
+    await season_anime(interaction)
 
 #endregion
 

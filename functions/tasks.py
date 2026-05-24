@@ -1,7 +1,10 @@
 import requests
 from utils.utils import *
 from utils.tracing import trace_function
-from utils.db import rss_get_all_episodes, rss_update_episode, rss_add_feed, rss_get_series_list
+from utils.db import (
+    rss_get_all_episodes, rss_update_episode, rss_add_feed, rss_get_series_list,
+    episode_announcement_record,
+)
 from fuzzywuzzy import fuzz
 from datetime import datetime
 from discord.ext import tasks
@@ -15,7 +18,7 @@ def parse_pub_date(date_str):
 
 # Creates magnet url for the new rss episode
 @trace_function
-async def announce_new_episode(title, magnet_link, subs, bot):
+async def announce_new_episode(title, magnet_link, subs, bot, series=None):
     channel = bot.get_channel(OTAKU_CHANNEL_ID)
     # Insert magnet link into API (if required)
     apiUrl          = "https://tormag.ezpz.work/api/api.php?action=insertMagnets"
@@ -27,18 +30,25 @@ async def announce_new_episode(title, magnet_link, subs, bot):
     except (requests.RequestException, ValueError) as e:
         botLogger.error("tormag conversion failed: %s", e)
 
+    sent_message = None
     # Check if the response contains the magnet entries
     if responseJson and "magnetEntries" in responseJson and responseJson["magnetEntries"]:
         magnet_url = responseJson["magnetEntries"][0]  # Get the first magnet URL
         # Mentions live in `content` so they actually ping subscribers; the embed is just the formatted link
         user_mentions = " ".join([f"<@{user_id}>" for user_id in subs])
         embed = make_embed(f"New Episode Available: [{title}]({magnet_url})", kind="success")
-        await channel.send(content=user_mentions, embed=embed)
+        sent_message = await channel.send(content=user_mentions, embed=embed)
     else:
         # If no magnet URL is available or URL limit reached, log the error
         message = (responseJson or {}).get('message', 'tormag unreachable')
         formatted_message = (f"Error for {title}: {message} \nhere is the magnet instead :D : \n{magnet_link}")
         await channel.send(embed=make_embed(formatted_message, kind="error"))
+
+    if sent_message is not None and series:
+        # Map the announcement message back to its series so an on_raw_reaction_add
+        # listener can resolve series for reaction-based subscription.
+        await episode_announcement_record(sent_message.id, series)
+
     botLogger.info('finished announcing new episode')
 
 
@@ -65,7 +75,13 @@ async def check_for_new_episodes(bot):
                     feed_entry["link"],
                     feed_entry["size"],
                 )
-                await announce_new_episode(feed_entry["title"], feed_entry["link"], matching_entry["subs"], bot)
+                await announce_new_episode(
+                    feed_entry["title"],
+                    feed_entry["link"],
+                    matching_entry["subs"],
+                    bot,
+                    series=feed_entry["series"],
+                )
 
     botLogger.info('rss_check_complete')
 
