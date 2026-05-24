@@ -16,7 +16,7 @@ from functions.roulettes import roulette, auto_roulette_menu
 from functions.voice import play, leave
 from functions.feed import rss_menu
 from functions.nyaa import search
-from functions.mal import mal_menu, anime_list_menu, next_anime
+from functions.mal import mal_menu, anime_list_menu, next_anime, mal_link
 from functions.tasks import _run_new_episode_check_logic, check_for_new_anime
 
 from opentelemetry import trace
@@ -218,7 +218,14 @@ async def next_anime_command(interaction: discord.Interaction):
     botLogger.info('run next_anime_command')
     await next_anime(interaction)
 
-#endregion 
+@bot.tree.command(name="mal_link", description="Bind your Discord account to your MAL username")
+@app_commands.describe(mal_username="Your MyAnimeList username (case-insensitive)")
+@trace_function
+async def mal_link_command(interaction: discord.Interaction, mal_username: str):
+    botLogger.info('run mal_link_command')
+    await mal_link(interaction, mal_username)
+
+#endregion
 
 bot.run(config.discord.token)
 botLogger.info('bot stop running.')

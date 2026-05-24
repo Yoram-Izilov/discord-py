@@ -3,7 +3,12 @@ from functions.roulettes import roulette
 from functions.roulettes import roulette
 from utils.utils import *
 from utils.tracing import trace_function
-from utils.db import mal_get_users, mal_add_user, mal_remove_user, anime_list_get
+from utils.db import (
+    mal_get_users, mal_add_user, mal_remove_user, anime_list_get,
+    mal_link_discord, mal_get_username_for_discord,
+    mal_snapshot_replace, mal_snapshot_updated_at, mal_activity_record,
+)
+from utils import anime_api
 
 
 @trace_function
@@ -86,3 +91,89 @@ async def view_anime_list(interaction, status):
         await interaction.response.send_message(
             embed=make_embed("No anime.", kind="info")
         )
+
+
+# ---------------------------------------------------------------------------
+# Per-user MAL snapshot pipeline (Phase 1)
+# ---------------------------------------------------------------------------
+
+SNAPSHOT_STALE_SECONDS = 6 * 60 * 60
+
+
+@trace_function
+async def _refresh_user_snapshot(username: str) -> int:
+    """Pull `username`'s full MAL list, replace their snapshot, write activity
+    rows for the diff. Returns the entry count fetched (0 = list private/empty)."""
+    entries = await anime_api.get_user_list(username)
+    if not entries:
+        return 0
+    diff = await mal_snapshot_replace(username, entries)
+    if diff:
+        await mal_activity_record([dict(d, username=username) for d in diff])
+    return len(entries)
+
+
+@trace_function
+async def _refresh_if_stale(username: str) -> None:
+    from datetime import datetime, timezone, timedelta
+    ts = await mal_snapshot_updated_at(username)
+    if ts is None or ts < datetime.now(tz=timezone.utc) - timedelta(seconds=SNAPSHOT_STALE_SECONDS):
+        await _refresh_user_snapshot(username)
+
+
+@trace_function
+async def mal_link(interaction: discord.Interaction, mal_username: str):
+    await interaction.response.defer(ephemeral=True)
+    mal_username = (mal_username or "").strip()
+    if not mal_username:
+        await interaction.followup.send(
+            embed=make_embed("❌ Please provide your MAL username.", kind="error"),
+            ephemeral=True,
+        )
+        return
+
+    existing = await mal_get_username_for_discord(interaction.user.id)
+    if existing and existing.lower() == mal_username.lower():
+        await interaction.followup.send(
+            embed=make_embed(f"Already linked to **{existing}**.", kind="info"),
+            ephemeral=True,
+        )
+        return
+
+    # Validate the MAL username exists and has a public list by trying a fetch.
+    entries = await anime_api.get_user_list(mal_username)
+    if not entries:
+        await interaction.followup.send(
+            embed=make_embed(
+                f"❌ Could not load **{mal_username}**'s list. "
+                "Username may be misspelled or the list is set to private.",
+                kind="error",
+            ),
+            ephemeral=True,
+        )
+        return
+
+    await mal_add_user(mal_username)
+    linked = await mal_link_discord(mal_username, interaction.user.id)
+    if not linked:
+        await interaction.followup.send(
+            embed=make_embed(
+                "❌ Your Discord account is already linked to a different MAL "
+                "user. Have an admin unbind it first.",
+                kind="error",
+            ),
+            ephemeral=True,
+        )
+        return
+
+    diff = await mal_snapshot_replace(mal_username, entries)
+    if diff:
+        await mal_activity_record([dict(d, username=mal_username) for d in diff])
+
+    await interaction.followup.send(
+        embed=make_embed(
+            f"✅ Linked to **{mal_username}** — {len(entries)} entries cached.",
+            kind="success",
+        ),
+        ephemeral=True,
+    )
