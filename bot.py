@@ -23,6 +23,7 @@ from functions.mal import (
 )
 from functions.season import season_anime
 from functions.quiz import anime_quiz
+from functions.help import show_help
 from functions.tasks import (
     _run_new_episode_check_logic, check_for_new_anime,
     refresh_all_mal_snapshots, weekly_leaderboard,
@@ -353,6 +354,16 @@ async def season_anime_command(interaction: discord.Interaction):
 async def anime_quiz_command(interaction: discord.Interaction):
     botLogger.info('run anime_quiz_command')
     await anime_quiz(interaction)
+
+#endregion
+
+#region Help
+
+@bot.tree.command(name="help", description="List every command the bot exposes, grouped by feature")
+@trace_function
+async def help_command(interaction: discord.Interaction):
+    botLogger.info('run help_command')
+    await show_help(interaction)
 
 #endregion
 
