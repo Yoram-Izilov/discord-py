@@ -626,6 +626,16 @@ async def mal_activity_leaderboard(since: datetime) -> list[tuple[str, int]]:
 
 
 @trace_function
+async def mal_random_anime_id() -> int | None:
+    """Pick a random mal_id from any user's snapshot. Used by /anime_quiz."""
+    async with get_pool().acquire() as conn:
+        row = await conn.fetchrow(
+            "SELECT mal_id FROM mal_list_snapshots ORDER BY RANDOM() LIMIT 1"
+        )
+    return int(row["mal_id"]) if row else None
+
+
+@trace_function
 async def mal_alltime_leader() -> tuple[str, int] | None:
     async with get_pool().acquire() as conn:
         row = await conn.fetchrow(
