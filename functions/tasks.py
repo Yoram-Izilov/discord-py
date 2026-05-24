@@ -4,9 +4,11 @@ from utils.tracing import trace_function
 from utils.db import (
     rss_get_all_episodes, rss_update_episode, rss_add_feed, rss_get_series_list,
     episode_announcement_record,
+    mal_get_users, mal_get_discord_for_username,
+    mal_activity_episodes_by_month, mal_activity_leaderboard, mal_alltime_leader,
 )
 from fuzzywuzzy import fuzz
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from discord.ext import tasks
 from sklearn.metrics.pairwise import cosine_similarity
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -141,6 +143,114 @@ def vector_similarity(str1, str2):
 @trace_function
 def string_similar(str1, str2):
     return fuzz_similarity(str1, str2) > 0.85 or vector_similarity(str1, str2) > 0.37
+
+
+# ---------------------------------------------------------------------------
+# Phase 5: per-user snapshot refresh + leaderboard + milestone announcements
+# ---------------------------------------------------------------------------
+
+MONTHLY_EPISODES_MILESTONE = 100
+
+
+async def _user_mention_or_name(username: str) -> str:
+    discord_id = await mal_get_discord_for_username(username)
+    return f"<@{discord_id}>" if discord_id else f"**{username}**"
+
+
+async def _monthly_total(username: str) -> int:
+    months = await mal_activity_episodes_by_month(username, months=1)
+    return sum(v for _, v in months) if months else 0
+
+
+@tasks.loop(hours=6)
+@trace_function
+async def refresh_all_mal_snapshots(bot):
+    """Refresh every linked user's MAL snapshot and emit milestone announcements
+    from each diff. Runs every 6h."""
+    # Lazy import — functions/mal.py imports from this module, so a top-level
+    # import would be circular.
+    from functions.mal import _refresh_user_snapshot
+
+    channel = bot.get_channel(OTAKU_CHANNEL_ID)
+    users = await mal_get_users()
+    botLogger.info("refresh_all_mal_snapshots: %d users", len(users))
+
+    for username in users:
+        try:
+            prev_monthly = await _monthly_total(username)
+            diff = await _refresh_user_snapshot(username)
+            if not diff:
+                continue
+            new_monthly = await _monthly_total(username)
+            mention = await _user_mention_or_name(username)
+
+            if channel is not None:
+                for d in diff:
+                    if d.get("new_status") == Statuses.COMPLETED.value:
+                        await channel.send(
+                            embed=make_embed(
+                                f"🎉 {mention} finished **{d['title']}**!",
+                                kind="success",
+                            )
+                        )
+
+                if prev_monthly < MONTHLY_EPISODES_MILESTONE <= new_monthly:
+                    await channel.send(
+                        embed=make_embed(
+                            f"🔥 {mention} just hit **{new_monthly}** episodes this month!",
+                            kind="success",
+                        )
+                    )
+        except Exception as e:
+            botLogger.error(
+                "refresh_all_mal_snapshots failed for %s: %s",
+                username, e, exc_info=True,
+            )
+
+    botLogger.info("refresh_all_mal_snapshots: done")
+
+
+@tasks.loop(hours=168)
+@trace_function
+async def weekly_leaderboard(bot):
+    """Post a weekly podium of top episode-watchers + an all-time leader footer."""
+    channel = bot.get_channel(OTAKU_CHANNEL_ID)
+    if channel is None:
+        botLogger.warning("weekly_leaderboard: OTAKU channel not found")
+        return
+
+    week_ago = datetime.now(tz=timezone.utc) - timedelta(days=7)
+    top = await mal_activity_leaderboard(since=week_ago)
+
+    if not top:
+        await channel.send(
+            embed=make_embed(
+                "📊 No tracked MAL activity this week.",
+                kind="info",
+                title="Weekly anime leaderboard",
+            )
+        )
+        return
+
+    medals = ["🥇", "🥈", "🥉", "4️⃣", "5️⃣"]
+    lines: list[str] = []
+    for i, (username, total) in enumerate(top[:5]):
+        mention = await _user_mention_or_name(username)
+        lines.append(f"{medals[i]} {mention} — **{total}** episodes")
+
+    alltime = await mal_alltime_leader()
+    if alltime:
+        alltime_mention = await _user_mention_or_name(alltime[0])
+        lines.append("")
+        lines.append(f"_All-time leader: {alltime_mention} with **{alltime[1]:,}** episodes_")
+
+    await channel.send(
+        embed=make_embed(
+            "\n".join(lines),
+            kind="info",
+            title="📊 Weekly anime leaderboard",
+        )
+    )
 
 
 

@@ -112,16 +112,17 @@ SNAPSHOT_STALE_SECONDS = 6 * 60 * 60
 
 
 @trace_function
-async def _refresh_user_snapshot(username: str) -> int:
+async def _refresh_user_snapshot(username: str) -> list[dict]:
     """Pull `username`'s full MAL list, replace their snapshot, write activity
-    rows for the diff. Returns the entry count fetched (0 = list private/empty)."""
+    rows for the diff. Returns the diff rows (empty if list private/empty or
+    nothing changed). Callers that just want freshness can ignore the return."""
     entries = await anime_api.get_user_list(username)
     if not entries:
-        return 0
+        return []
     diff = await mal_snapshot_replace(username, entries)
     if diff:
         await mal_activity_record([dict(d, username=username) for d in diff])
-    return len(entries)
+    return diff
 
 
 @trace_function

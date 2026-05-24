@@ -22,7 +22,10 @@ from functions.mal import (
     next_episode, mal_compare, mal_stats, anime_recommend, who_is_watching,
 )
 from functions.season import season_anime
-from functions.tasks import _run_new_episode_check_logic, check_for_new_anime
+from functions.tasks import (
+    _run_new_episode_check_logic, check_for_new_anime,
+    refresh_all_mal_snapshots, weekly_leaderboard,
+)
 from utils.db import episode_announcement_get_series, rss_subscribe
 from config.consts import OTAKU_CHANNEL_ID
 
@@ -86,6 +89,8 @@ async def on_ready():
         print('tasks running.')
         check_for_new_anime.start(bot)
         _run_new_episode_check_logic.start(bot)
+        refresh_all_mal_snapshots.start(bot)
+        weekly_leaderboard.start(bot)
 
 
 @bot.event
