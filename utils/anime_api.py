@@ -224,7 +224,10 @@ async def get_user_list(username: str, status: int | None = None) -> list[dict]:
                 score = entry.get("score")
                 results.append({
                     "mal_id":           int(mal_id),
-                    "title":            title,
+                    # MAL serialises numeric-looking titles as JSON numbers
+                    # (e.g. the anime "86"). Force a string here so downstream
+                    # asyncpg INSERTs against a TEXT column don't blow up.
+                    "title":            str(title),
                     "status":           int(normalized_status),
                     "score":            int(score) if score else None,
                     "episodes_watched": int(entry.get("num_watched_episodes") or 0),

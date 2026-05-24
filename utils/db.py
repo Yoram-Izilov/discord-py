@@ -492,7 +492,7 @@ async def mal_snapshot_replace(username: str, entries: list[dict]) -> list[dict]
                         (
                             username,
                             int(e["mal_id"]),
-                            e["title"],
+                            str(e["title"]),
                             int(e["status"]),
                             int(e["score"]) if e.get("score") else None,
                             int(e.get("episodes_watched") or 0),
