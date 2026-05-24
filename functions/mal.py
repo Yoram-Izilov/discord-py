@@ -391,6 +391,38 @@ async def _next_episode_search(interaction: discord.Interaction, anime: str):
     await interaction.followup.send(embed=embed)
 
 
+MAX_EMBEDS_PER_MESSAGE = 10
+
+
+def _build_sub_embed(series: str, result: list | Exception) -> tuple[int | None, discord.Embed]:
+    """Build a per-anime embed for the /next_episode subscription view.
+    Returns (next_airing_ts | None, embed) — ts is used for sorting."""
+    if isinstance(result, Exception) or not result:
+        embed = make_embed("_not found on MAL_", kind="info", title=series)
+        return None, embed
+
+    anime = result[0]
+    title = anime.get("title") or series
+    ts = _next_airing_ts(anime)
+    if ts is not None:
+        desc = f"📺 Next episode <t:{ts}:R>\n<t:{ts}:F>"
+    elif anime.get("airing"):
+        broadcast_str = (anime.get("broadcast") or {}).get("string") or "schedule unknown"
+        desc = f"📺 Currently airing — {broadcast_str}"
+    else:
+        status = anime.get("status") or "Not currently airing"
+        desc = f"📺 _{status}_"
+
+    embed = make_embed(desc, kind="info", title=title)
+    image = ((anime.get("images") or {}).get("jpg") or {}).get("image_url")
+    if image:
+        embed.set_thumbnail(url=image)
+    url = anime.get("url")
+    if url:
+        embed.url = url
+    return ts, embed
+
+
 @trace_function
 async def _next_episode_for_subscriptions(interaction: discord.Interaction):
     subs = await rss_get_subscribed_series(interaction.user.id)
@@ -411,36 +443,28 @@ async def _next_episode_for_subscriptions(interaction: discord.Interaction):
         anime_api.search_anime(series, limit=1) for series in subs
     ), return_exceptions=True)
 
-    rows: list[tuple[int | None, str]] = []
-    for series, result in zip(subs, search_results):
-        if isinstance(result, Exception) or not result:
-            rows.append((None, f"**{series}** — _not found on MAL_"))
-            continue
-        anime = result[0]
-        title = anime.get("title") or series
-        ts = _next_airing_ts(anime)
-        if ts is not None:
-            rows.append((ts, f"**{title}** — <t:{ts}:R>"))
-        elif anime.get("airing"):
-            broadcast_str = (anime.get("broadcast") or {}).get("string") or "schedule unknown"
-            rows.append((None, f"**{title}** — _airing, {broadcast_str}_"))
-        else:
-            status = anime.get("status") or "not airing"
-            rows.append((None, f"**{title}** — _{status.lower()}_"))
-
-    # Sort: rows with timestamps first (soonest first), unscheduled at the bottom.
+    rows: list[tuple[int | None, discord.Embed]] = [
+        _build_sub_embed(series, result)
+        for series, result in zip(subs, search_results)
+    ]
+    # Soonest first, unscheduled / unknown at the bottom.
     rows.sort(key=lambda r: (r[0] is None, r[0] if r[0] is not None else 0))
-    body = "\n".join(line for _, line in rows)
 
-    embed = make_embed(
-        body,
-        kind="info",
-        title="📺 Next episodes for your subscriptions",
-    )
-    embed.set_footer(
-        text="Pass `anime:` to /next_episode to look up a specific show instead."
-    )
-    await interaction.followup.send(embed=embed)
+    embeds_to_send = [embed for _, embed in rows[:MAX_EMBEDS_PER_MESSAGE]]
+
+    if len(rows) > MAX_EMBEDS_PER_MESSAGE:
+        content = (
+            f"📺 **Next episodes for your subscriptions** "
+            f"— showing {MAX_EMBEDS_PER_MESSAGE} soonest of {len(rows)}.\n"
+            "Pass `anime:` to /next_episode to look up specific shows."
+        )
+    else:
+        content = (
+            "📺 **Next episodes for your subscriptions**\n"
+            "Pass `anime:` to /next_episode to look up a specific show instead."
+        )
+
+    await interaction.followup.send(content=content, embeds=embeds_to_send)
 
 
 @trace_function
