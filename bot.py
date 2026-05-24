@@ -22,6 +22,7 @@ from functions.mal import (
     next_episode, mal_compare, mal_stats, anime_recommend, who_is_watching,
 )
 from functions.season import season_anime
+from functions.quiz import anime_quiz
 from functions.tasks import (
     _run_new_episode_check_logic, check_for_new_anime,
     refresh_all_mal_snapshots, weekly_leaderboard,
@@ -342,6 +343,16 @@ async def who_is_watching_command(interaction: discord.Interaction, anime: str):
 async def season_anime_command(interaction: discord.Interaction):
     botLogger.info('run season_anime_command')
     await season_anime(interaction)
+
+#endregion
+
+#region Quiz
+
+@bot.tree.command(name="anime_quiz", description="Guess the anime from its synopsis (60s, first correct guess wins)")
+@trace_function
+async def anime_quiz_command(interaction: discord.Interaction):
+    botLogger.info('run anime_quiz_command')
+    await anime_quiz(interaction)
 
 #endregion
 
