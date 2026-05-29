@@ -4,8 +4,6 @@ config/config-local.json
 rss_feed.txt
 data/
 .env
-monitoring/.env
-monitoring/alertmanager/discord-webhook-url
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
