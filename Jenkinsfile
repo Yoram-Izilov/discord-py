@@ -7,29 +7,6 @@ pipeline {
     }
 
     stages {
-        stage('Deploy Monitoring') {
-            when { changeset 'monitoring/**' }
-            environment {
-                MONITORING_DEPLOY_PATH = '/home/izilov/Desktop/discord-monitoring'
-            }
-            steps {
-                echo "Deploying monitoring stack..."
-                withCredentials([
-                    string(credentialsId: 'grafana-admin-password',
-                           variable: 'GRAFANA_ADMIN_PASSWORD'),
-                    string(credentialsId: 'discord-alertmanager-webhook-url',
-                           variable: 'DISCORD_WEBHOOK_URL')
-                ]) {
-                    sh '''
-                        rsync -a --delete monitoring/ "$MONITORING_DEPLOY_PATH/"
-                        umask 133
-                        printf "%s" "$DISCORD_WEBHOOK_URL" > "$MONITORING_DEPLOY_PATH/alertmanager/discord-webhook-url"
-                        docker compose -p monitoring -f "$MONITORING_DEPLOY_PATH/docker-compose.yml" up -d
-                    '''
-                }
-            }
-        }
-
         stage('Deploy') {
             steps {
                 echo "Deploying with docker-compose..."

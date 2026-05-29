@@ -35,7 +35,7 @@ Setting `debug: true` disables OpenTelemetry tracing **and Pyroscope profiling**
 
 The bot container attaches to the external `monitoring_monitoring` network so it can reach `tempo:4317`, `pyroscope:4040`, etc. If you rename that network or change the OTel endpoint in `bot.py`, update `docker-compose.yml` in the same commit (`chore(docker): ...`).
 
-A separate `Deploy Monitoring` stage handles the observability stack; it only runs when `monitoring/**` changes. See `monitoring/CLAUDE.md` for that flow.
+The observability stack itself lives in the **`home-server`** repo (`home-server/monitoring/`), not here — it's shared infrastructure, deployed independently. This bot only *attaches* to the `monitoring_monitoring` network that stack creates; it does not deploy it. As long as that network name is unchanged, the bot keeps tracing.
 
 ### Root `docker-compose.yml`
 
@@ -73,8 +73,9 @@ functions/
   voice.py           ← /play and /leave (yt-dlp + ffmpeg)
 data/                ← runtime artifacts only (gitignored): logs, downloaded files.
                        NOT persistent state — that lives in Postgres.
-monitoring/          ← observability stack — see monitoring/CLAUDE.md
 ```
+
+The observability stack (Prometheus/Grafana/Loki/Tempo/Pyroscope/Alertmanager) lives in the separate `home-server` repo. The bot just attaches to its `monitoring_monitoring` network to export traces and profiles.
 
 ## Key patterns
 
@@ -128,7 +129,7 @@ Hardcoded in `config/consts.py`:
 | `docs` | CLAUDE.md, README, inline comments only |
 | `style` | Formatting, linting — no logic change |
 
-**Scopes** — match the file/module being changed: `bot`, `feed`, `mal`, `nyaa`, `roulette`, `voice`, `tasks`, `utils`, `db`, `config`, `docker`, `monitoring`
+**Scopes** — match the file/module being changed: `bot`, `feed`, `mal`, `nyaa`, `roulette`, `voice`, `tasks`, `utils`, `db`, `config`, `docker`
 
 **Examples**
 
@@ -149,7 +150,7 @@ WIP changes
 - **One logical change per commit.** Don't bundle a feature with an unrelated bugfix.
 - If a change touches `bot.py` and a `functions/` file for the same feature, that's one commit. If it touches `feed.py` and `mal.py` for unrelated reasons, split it.
 - Keep commits small enough that `git revert` is safe to use on each one.
-- Never commit: `config/config-local.json`, `data/`, `.env`, `monitoring/.env`, `monitoring/alertmanager/discord-webhook-url`, tokens, or secrets — these are gitignored for a reason.
+- Never commit: `config/config-local.json`, `data/`, `.env`, tokens, or secrets — these are gitignored for a reason.
 
 ### Branches and pushing
 
