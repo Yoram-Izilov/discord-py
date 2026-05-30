@@ -6,7 +6,11 @@
       "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\Yoram\\\\Desktop\\\\discord-py\\\\discord-py\" -Recurse -Filter \"*.py\")",
       "Bash(Select-Object -ExpandProperty FullName)",
       "Bash(git checkout *)",
-      "Bash(git pull *)"
+      "Bash(git pull *)",
+      "Bash(git push *)",
+      "Bash(gh pr *)",
+      "WebSearch",
+      "WebFetch(domain:github.com)"
     ]
   }
 }

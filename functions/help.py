@@ -63,7 +63,7 @@ async def show_help(interaction: discord.Interaction):
             continue
         lines.append(f"**{category}**")
         for name, desc in sorted(cmds):
-            lines.append(f"`/{name}` — {desc}" if desc else f"`/{name}`")
+            lines.append(f"`/{name}` - {desc}" if desc else f"`/{name}`")
         lines.append("")
 
     embed = make_embed("\n".join(lines).rstrip(), kind="info", title="🤖 Bot commands")

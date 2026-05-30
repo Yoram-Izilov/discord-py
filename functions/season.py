@@ -125,13 +125,13 @@ class SeasonView(discord.ui.View):
     def render_embed(self) -> discord.Embed:
         anime = self.anime_list[self.page]
         title = anime.get("title") or "Unknown"
-        broadcast = ((anime.get("broadcast") or {}).get("string")) or "—"
+        broadcast = ((anime.get("broadcast") or {}).get("string")) or "-"
         score = anime.get("score")
-        score_str = f"{score}/10" if score else "—"
+        score_str = f"{score}/10" if score else "-"
         genres_list = [g["name"] for g in (anime.get("genres") or [])[:4]]
-        genres_str = ", ".join(genres_list) if genres_list else "—"
+        genres_str = ", ".join(genres_list) if genres_list else "-"
         url = anime.get("url")
-        mal_link = f"[MyAnimeList]({url})" if url else "—"
+        mal_link = f"[MyAnimeList]({url})" if url else "-"
 
         synopsis_full = anime.get("synopsis") or ""
         if synopsis_full:
@@ -180,7 +180,7 @@ class SeasonView(discord.ui.View):
             if not auto_added:
                 await interaction.followup.send(
                     embed=make_embed(
-                        "📡 No matching SubsPlease entry yet — the show hasn't started releasing. "
+                        "📡 No matching SubsPlease entry yet - the show hasn't started releasing. "
                         "Try again once episode 1 is out.",
                         kind="info",
                     ),

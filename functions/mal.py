@@ -116,7 +116,7 @@ SNAPSHOT_STALE_SECONDS = 6 * 60 * 60
 @trace_function
 async def _refresh_user_snapshot(username: str) -> list[dict]:
     """Pull `username`'s full MAL list, replace their snapshot, and write
-    activity rows for the diff — but ONLY when there was a prior snapshot.
+    activity rows for the diff - but ONLY when there was a prior snapshot.
 
     On the first ingest for a user, mal_snapshot_replace produces fake diffs
     (delta_episodes = total episodes ever watched per anime, new_status set
@@ -124,7 +124,7 @@ async def _refresh_user_snapshot(username: str) -> list[dict]:
     leaderboard and /mal_stats with a one-time burst that equals the user's
     all-time totals. We populate the snapshot but skip the activity dump.
 
-    Returns the diff rows so callers can still inspect them — milestone
+    Returns the diff rows so callers can still inspect them - milestone
     emitters separately gate on a `is_first_ingest` flag (see
     refresh_all_mal_snapshots) so spurious new_status=COMPLETED rows from
     first ingest don't trigger announcements either."""
@@ -191,7 +191,7 @@ async def mal_link(interaction: discord.Interaction, mal_username: str):
         )
         return
 
-    # First ingest by definition — don't write activity rows. The initial
+    # First ingest by definition - don't write activity rows. The initial
     # diff's delta_episodes equals each anime's total episodes_watched, which
     # would otherwise pollute the weekly leaderboard with a one-off burst
     # equal to the user's all-time totals.
@@ -199,7 +199,7 @@ async def mal_link(interaction: discord.Interaction, mal_username: str):
 
     await interaction.followup.send(
         embed=make_embed(
-            f"✅ Linked to **{mal_username}** — {len(entries)} entries cached.",
+            f"✅ Linked to **{mal_username}** - {len(entries)} entries cached.",
             kind="success",
         ),
         ephemeral=True,
@@ -222,7 +222,7 @@ async def mal_unlink(interaction: discord.Interaction):
     await interaction.followup.send(
         embed=make_embed(
             f"🔓 Unlinked **{unlinked}** from your Discord. Your cached list "
-            "data stays for community queries — use `/mal` → Remove user if "
+            "data stays for community queries - use `/mal` → Remove user if "
             "you want it wiped entirely.",
             kind="success",
         ),
@@ -231,7 +231,7 @@ async def mal_unlink(interaction: discord.Interaction):
 
 
 # ---------------------------------------------------------------------------
-# Phase 2 helpers — picker + caller-username resolver
+# Phase 2 helpers - picker + caller-username resolver
 # ---------------------------------------------------------------------------
 
 WEEKDAYS = {
@@ -297,7 +297,7 @@ async def _pick_anime(interaction: discord.Interaction, query: str) -> dict | No
     view.add_item(select)
 
     await interaction.followup.send(
-        embed=make_embed(f"Multiple matches for **{query}** — pick one:", kind="info"),
+        embed=make_embed(f"Multiple matches for **{query}** - pick one:", kind="info"),
         view=view,
     )
 
@@ -342,7 +342,7 @@ def _format_next_episode(anime: dict) -> str:
         return f"📺 Next episode <t:{ts}:R> (<t:{ts}:F>)"
     if anime.get("airing"):
         broadcast_str = (anime.get("broadcast") or {}).get("string") or "Schedule unknown"
-        return f"📺 Currently airing — broadcast: {broadcast_str}"
+        return f"📺 Currently airing - broadcast: {broadcast_str}"
     status = anime.get("status") or "Not currently airing"
     return f"📺 **{status}**"
 
@@ -396,7 +396,7 @@ MAX_EMBEDS_PER_MESSAGE = 10
 
 def _build_sub_embed(series: str, result: list | Exception) -> tuple[int | None, discord.Embed]:
     """Build a per-anime embed for the /next_episode subscription view.
-    Returns (next_airing_ts | None, embed) — ts is used for sorting."""
+    Returns (next_airing_ts | None, embed) - ts is used for sorting."""
     if isinstance(result, Exception) or not result:
         embed = make_embed("_not found on MAL_", kind="info", title=series)
         return None, embed
@@ -408,7 +408,7 @@ def _build_sub_embed(series: str, result: list | Exception) -> tuple[int | None,
         desc = f"📺 Next episode <t:{ts}:R>\n<t:{ts}:F>"
     elif anime.get("airing"):
         broadcast_str = (anime.get("broadcast") or {}).get("string") or "schedule unknown"
-        desc = f"📺 Currently airing — {broadcast_str}"
+        desc = f"📺 Currently airing - {broadcast_str}"
     else:
         status = anime.get("status") or "Not currently airing"
         desc = f"📺 _{status}_"
@@ -437,7 +437,7 @@ async def _next_episode_for_subscriptions(interaction: discord.Interaction):
         )
         return
 
-    # Concurrent searches — Jikan's internal semaphore + ratelimiter keeps
+    # Concurrent searches - Jikan's internal semaphore + ratelimiter keeps
     # us within ~3 rps. Cached entries return instantly on later runs.
     search_results = await asyncio.gather(*(
         anime_api.search_anime(series, limit=1) for series in subs
@@ -455,7 +455,7 @@ async def _next_episode_for_subscriptions(interaction: discord.Interaction):
     if len(rows) > MAX_EMBEDS_PER_MESSAGE:
         content = (
             f"📺 **Next episodes for your subscriptions** "
-            f"— showing {MAX_EMBEDS_PER_MESSAGE} soonest of {len(rows)}.\n"
+            f"- showing {MAX_EMBEDS_PER_MESSAGE} soonest of {len(rows)}.\n"
             "Pass `anime:` to /next_episode to look up specific shows."
         )
     else:
@@ -591,7 +591,7 @@ async def mal_stats(interaction: discord.Interaction):
     if not months and not dist:
         await interaction.followup.send(
             embed=make_embed(
-                "No stats yet — try again later once activity has been tracked.",
+                "No stats yet - try again later once activity has been tracked.",
                 kind="info",
             )
         )
@@ -608,7 +608,7 @@ async def mal_stats(interaction: discord.Interaction):
     embed = make_embed(
         f"Episodes tracked over the last 12 months: **{total_eps}**",
         kind="info",
-        title=f"📊 MAL stats — {username}",
+        title=f"📊 MAL stats - {username}",
     )
     embed.set_image(url="attachment://mal_stats.png")
     await interaction.followup.send(
@@ -700,6 +700,6 @@ async def who_is_watching(interaction: discord.Interaction, anime: str):
         embed=make_embed(
             "\n".join(rendered),
             kind="info",
-            title=f"👀 Watching — {title}",
+            title=f"👀 Watching - {title}",
         )
     )

@@ -82,7 +82,7 @@ async def anime_quiz(interaction: discord.Interaction):
 
     masked = _mask_title_in_text(synopsis[:MAX_SYNOPSIS_LEN], anime)
     embed = make_embed(
-        f"{masked}\n\n_Reply with the anime's title — you have {QUIZ_TIMEOUT_SECONDS} seconds!_",
+        f"{masked}\n\n_Reply with the anime's title - you have {QUIZ_TIMEOUT_SECONDS} seconds!_",
         kind="info",
         title="🎮 Anime Quiz",
     )
