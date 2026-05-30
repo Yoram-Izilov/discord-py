@@ -124,7 +124,7 @@ async def on_raw_reaction_add(payload: discord.RawReactionActionEvent):
         return
 
     if not await rss_subscribe(series, payload.user_id):
-        return  # already subscribed — no need to DM again
+        return  # already subscribed - no need to DM again
 
     user = bot.get_user(payload.user_id) or await bot.fetch_user(payload.user_id)
     if user is None:

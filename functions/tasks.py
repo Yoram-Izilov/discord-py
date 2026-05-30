@@ -167,7 +167,7 @@ async def _monthly_total(username: str) -> int:
 async def refresh_all_mal_snapshots(bot):
     """Refresh every linked user's MAL snapshot and emit milestone announcements
     from each diff. Runs every 6h."""
-    # Lazy import — functions/mal.py imports from this module, so a top-level
+    # Lazy import - functions/mal.py imports from this module, so a top-level
     # import would be circular.
     from functions.mal import _refresh_user_snapshot
 
@@ -245,7 +245,7 @@ async def weekly_leaderboard(bot):
     if top:
         for i, (username, total) in enumerate(top[:5]):
             mention = await _user_mention_or_name(username)
-            lines.append(f"{medals[i]} {mention} — **{total}** episodes")
+            lines.append(f"{medals[i]} {mention} - **{total}** episodes")
     else:
         lines.append("_No tracked MAL activity this week._")
 
